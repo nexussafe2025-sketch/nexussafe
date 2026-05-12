@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexussafe · Seguimiento de Clientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --gold:#1A6FB0;--gold-light:#2281CC;
+  --green:#0E7A5A;--green-light:#0D6B4E;
+  --red:#C0392B;--amber:#C27A00;
+  --amber-bg:rgba(194,122,0,0.10);--amber-border:rgba(194,122,0,0.30);
+  --gray:#5A6878;--border:rgba(34,129,204,0.25);
+  --vitality:#7B5EA7;--vitality-bg:rgba(123,94,167,0.10);--vitality-border:rgba(123,94,167,0.30);
+  --referido-bg:rgba(13,107,78,0.10);--referido-border:rgba(13,107,78,0.30);
+  --bg:#F5F8FD;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:#1E2A3A;min-height:100vh;overflow-x:hidden;}
+
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:linear-gradient(145deg,#E8F0FA,#F5F8FD,#EBF2FB);position:fixed;inset:0;z-index:9999;}
+.login-card{background:rgba(255,255,255,0.95);border:1px solid rgba(34,129,204,0.22);border-radius:18px;
+  padding:42px 44px 36px;width:380px;position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(26,111,176,0.12);}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
+  background:linear-gradient(90deg,#1A6FB0,#2281CC,#5AAAE0,transparent);}
+.login-logo-area{text-align:center;margin-bottom:28px;}
+.login-logo-text{font-family:'Merriweather',serif;font-size:22px;color:#1A6FB0;}
+.login-logo-sub{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#5A6878;margin-top:4px;}
+.login-divider{width:40px;height:2px;background:linear-gradient(90deg,#2281CC,transparent);margin:14px auto 0;}
+.l-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5A6878;margin-bottom:6px;display:block;}
+.l-input{width:100%;background:#F5F8FD;border:1px solid rgba(34,129,204,0.25);border-radius:8px;
+  padding:11px 14px;color:#1A1A1A;font-family:'Lato',sans-serif;font-size:14px;outline:none;margin-bottom:16px;transition:border-color .2s;}
+.l-input:focus{border-color:#2281CC;background:#fff;}
+.l-btn{width:100%;padding:12px;background:linear-gradient(135deg,#1A6FB0,#2281CC);border:none;border-radius:8px;
+  color:#EEF3FB;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.l-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(34,129,204,0.30);}
+.l-error{background:rgba(192,57,43,0.08);border:1px solid rgba(192,57,43,0.25);border-radius:7px;
+  padding:9px 14px;font-size:12px;color:#C0392B;margin-top:12px;display:none;text-align:center;}
+.l-footer{text-align:center;margin-top:20px;font-size:10px;color:#5A6878;letter-spacing:1px;}
+#app-screen{display:none;}
+
+/* TOPBAR */
+.topbar{background:rgba(235,242,252,0.98);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:10px 24px;position:sticky;top:0;z-index:100;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.tab-btn{padding:6px 13px;border-radius:6px;border:1px solid transparent;cursor:pointer;font-family:'Lato',sans-serif;
+  font-size:11px;font-weight:600;background:transparent;color:var(--gray);transition:all .2s;}
+.tab-btn.active{background:rgba(34,129,204,0.15);color:var(--gold-light);border-color:var(--border);}
+.tab-btn:hover:not(.active){background:rgba(34,129,204,0.08);}
+.sep{width:1px;height:20px;background:var(--border);display:inline-block;}
+
+/* LAYOUT */
+.main{display:grid;grid-template-columns:268px 1fr;min-height:calc(100vh - 54px);}
+
+/* SIDEBAR */
+.sidebar{background:rgba(235,242,252,0.6);border-right:1px solid var(--border);padding:14px;
+  overflow-y:auto;height:calc(100vh - 54px);position:sticky;top:54px;}
+.sb-section{margin-bottom:18px;}
+.sb-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:7px;display:block;}
+.alert-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;margin-bottom:5px;cursor:pointer;transition:background .15s;}
+.alert-item:hover{background:rgba(34,129,204,0.08);}
+.a-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dot-red{background:#C0392B;}.dot-amber{background:#C27A00;}.dot-green{background:#0D6B4E;}
+.dot-vitality{background:#7B5EA7;}.dot-blue{background:#2281CC;}
+.a-text{font-size:11px;color:#1E2A3A;line-height:1.3;flex:1;}
+.a-sub{font-size:9px;color:var(--gray);margin-top:1px;}
+.a-cnt{font-size:10px;font-weight:700;padding:2px 6px;border-radius:50px;flex-shrink:0;}
+.ac-red{background:rgba(192,57,43,0.12);color:#C0392B;}
+.ac-amber{background:var(--amber-bg);color:#C27A00;}
+.ac-green{background:var(--referido-bg);color:#0D6B4E;}
+.ac-vitality{background:var(--vitality-bg);color:#7B5EA7;}
+.ac-blue{background:rgba(34,129,204,0.12);color:#2281CC;}
+.filter-select,.search-input{width:100%;background:rgba(255,255,255,0.8);border:1px solid var(--border);border-radius:6px;
+  padding:6px 9px;color:#1A1A1A;font-family:'Lato',sans-serif;font-size:12px;outline:none;margin-bottom:5px;}
+.search-input::placeholder{color:rgba(80,80,80,0.4);}
+.search-input:focus,.filter-select:focus{border-color:var(--gold);}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.kpi-mini{background:rgba(255,255,255,0.75);border:1px solid var(--border);border-radius:8px;padding:7px 9px;text-align:center;}
+.kpi-val{font-family:'Merriweather',serif;font-size:17px;color:#1A1A1A;line-height:1;}
+.kpi-lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-top:2px;}
+
+/* CONTENT */
+.content{padding:16px;overflow-y:auto;}
+.content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.content-title{font-family:'Merriweather',serif;font-size:18px;color:#1A1A1A;}
+.btn-actions{display:flex;gap:7px;flex-wrap:wrap;}
+.add-btn{background:rgba(13,107,78,0.10);border:1px solid rgba(13,107,78,0.28);color:#0D6B4E;
+  border-radius:6px;padding:6px 13px;font-family:'Lato',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.add-btn:hover{background:rgba(13,107,78,0.20);}
+.imp-btn{background:rgba(34,129,204,0.08);border:1px solid rgba(34,129,204,0.25);color:var(--gold-light);
+  border-radius:6px;padding:6px 13px;font-family:'Lato',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.imp-btn:hover{background:rgba(34,129,204,0.15);}
+
+/* PERIODO */
+.period-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.period-select{background:rgba(255,255,255,0.8);border:1px solid var(--border);border-radius:6px;
+  padding:5px 10px;font-family:'Lato',sans-serif;font-size:12px;color:#1A1A1A;outline:none;}
+.period-select:focus{border-color:var(--gold);}
+.period-badge{font-size:10px;color:var(--gray);padding:4px 10px;background:rgba(34,129,204,0.06);border-radius:50px;border:1px solid var(--border);}
+
+/* TABLA */
+.tabla-wrap{background:rgba(255,255,255,0.65);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.tabla-head{display:grid;grid-template-columns:1.5fr 0.75fr 0.75fr 0.85fr 0.65fr 0.6fr 0.6fr 0.5fr 0.5fr 0.5fr 0.35fr;
+  gap:3px;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(34,129,204,0.07);}
+.tabla-head>div{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);}
+.tabla-row{display:grid;grid-template-columns:1.5fr 0.75fr 0.75fr 0.85fr 0.65fr 0.6fr 0.6fr 0.5fr 0.5fr 0.5fr 0.35fr;
+  gap:3px;padding:6px 12px;border-bottom:1px solid rgba(0,0,0,0.04);align-items:center;cursor:pointer;transition:background .15s;}
+.tabla-row:hover{background:rgba(34,129,204,0.05);}
+.tabla-row:last-child{border-bottom:none;}
+.t-nombre{font-size:12px;font-weight:700;color:#1A1A1A;}
+.t-sub{font-size:10px;color:var(--gray);margin-top:1px;}
+.t-cell{font-size:11px;color:#1E2A3A;}
+.t-center{text-align:center;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:50px;font-size:9px;font-weight:700;}
+.badge-renov{background:var(--amber-bg);color:#C27A00;border:1px solid var(--amber-border);}
+.badge-riesgo{background:rgba(192,57,43,0.10);color:#C0392B;border:1px solid rgba(192,57,43,0.25);}
+.badge-ok{background:rgba(13,107,78,0.10);color:#0D6B4E;border:1px solid rgba(13,107,78,0.25);}
+.badge-vitality{background:var(--vitality-bg);color:#7B5EA7;border:1px solid var(--vitality-border);}
+.badge-referido{background:var(--referido-bg);color:#0D6B4E;border:1px solid var(--referido-border);}
+.badge-aseg{background:rgba(34,129,204,0.10);color:#1358A0;border:1px solid rgba(34,129,204,0.25);}
+.badge-anulado{background:rgba(192,57,43,0.10);color:#C0392B;border:1px solid rgba(192,57,43,0.25);}
+.badge-activo{background:rgba(13,107,78,0.10);color:#0D6B4E;border:1px solid rgba(13,107,78,0.25);}
+.sat-inc{background:rgba(192,57,43,0.10);color:#C0392B;border:1px solid rgba(192,57,43,0.25);}
+.sat-sat{background:var(--amber-bg);color:#C27A00;border:1px solid var(--amber-border);}
+.sat-muy{background:rgba(13,107,78,0.10);color:#0D6B4E;border:1px solid rgba(13,107,78,0.25);}
+
+.icon-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:rgba(34,129,204,0.08);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--gold-light);transition:all .2s;}
+.icon-btn:hover{background:rgba(34,129,204,0.20);}
+
+/* VISTA CLIENTE */
+.back-btn{background:transparent;border:none;color:var(--gold-light);font-family:'Lato',sans-serif;font-size:12px;
+  cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:14px;padding:4px 0;}
+.back-btn:hover{color:var(--gold);}
+.cliente-header{background:rgba(255,255,255,0.80);border:1px solid var(--border);border-radius:12px;padding:16px 20px;
+  display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;position:relative;overflow:hidden;}
+.cliente-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-light),transparent);}
+.ch-avatar{width:46px;height:46px;border-radius:50%;background:rgba(34,129,204,0.15);
+  display:flex;align-items:center;justify-content:center;font-family:'Merriweather',serif;font-size:15px;font-weight:700;color:var(--gold);flex-shrink:0;}
+.ch-info{flex:1;margin-left:12px;}
+.ch-nombre{font-family:'Merriweather',serif;font-size:17px;color:#1A1A1A;margin-bottom:3px;}
+.ch-meta{display:flex;gap:10px;flex-wrap:wrap;}
+.ch-meta span{font-size:10px;color:var(--gray);}
+.ch-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.ch-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start;}
+.action-btn{padding:6px 12px;border-radius:6px;font-family:'Lato',sans-serif;font-size:10px;font-weight:700;
+  cursor:pointer;transition:all .2s;border:1px solid transparent;white-space:nowrap;}
+.btn-call{background:rgba(34,129,204,0.12);border-color:rgba(34,129,204,0.30);color:var(--gold-light);}
+.btn-call:hover{background:rgba(34,129,204,0.22);}
+.btn-referido{background:var(--referido-bg);border-color:var(--referido-border);color:#0D6B4E;}
+.btn-referido:hover{background:rgba(13,107,78,0.18);}
+.btn-vitality{background:var(--vitality-bg);border-color:var(--vitality-border);color:#7B5EA7;}
+.btn-vitality:hover{background:rgba(123,94,167,0.18);}
+.btn-agenda{background:rgba(34,129,204,0.10);border-color:rgba(34,129,204,0.28);color:#2281CC;}
+.btn-agenda:hover{background:rgba(34,129,204,0.20);}
+.btn-email{background:rgba(90,104,120,0.10);border-color:rgba(90,104,120,0.28);color:#5A6878;}
+.btn-email:hover{background:rgba(90,104,120,0.20);}
+
+/* DETALLE CARDS */
+.detalle-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+.detalle-card{background:rgba(255,255,255,0.80);border:1px solid var(--border);border-radius:10px;padding:13px 15px;position:relative;overflow:hidden;}
+.detalle-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.dc-blue::before{background:linear-gradient(90deg,var(--gold),transparent);}
+.dc-green::before{background:linear-gradient(90deg,#0D6B4E,transparent);}
+.dc-amber::before{background:linear-gradient(90deg,#C27A00,transparent);}
+.dc-vitality::before{background:linear-gradient(90deg,#7B5EA7,transparent);}
+.dc-red::before{background:linear-gradient(90deg,#C0392B,transparent);}
+.dc-label{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:3px;}
+.dc-val{font-family:'Merriweather',serif;font-size:14px;color:#1A1A1A;margin-bottom:2px;}
+.dc-sub{font-size:10px;color:var(--gray);}
+
+/* SATISFACCION */
+.sat-selector{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.sat-opt{padding:5px 10px;border-radius:50px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:all .2s;opacity:.45;}
+.sat-opt.active{opacity:1;}
+.so-inc{background:rgba(192,57,43,0.10);color:#C0392B;border-color:rgba(192,57,43,0.25);}
+.so-sat{background:var(--amber-bg);color:#C27A00;border-color:var(--amber-border);}
+.so-muy{background:rgba(13,107,78,0.10);color:#0D6B4E;border-color:rgba(13,107,78,0.25);}
+.sat-opt:hover{opacity:.8;}
+
+/* CONTRATO */
+.contrato-area{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap;}
+.contrato-link{font-size:11px;color:var(--gold-light);text-decoration:underline;cursor:pointer;}
+.contrato-label{padding:4px 10px;border-radius:6px;background:rgba(34,129,204,0.08);border:1px solid var(--border);
+  color:var(--gold-light);font-size:10px;font-weight:600;cursor:pointer;}
+.contrato-label:hover{background:rgba(34,129,204,0.15);}
+
+/* TIMELINE */
+.timeline-section{background:rgba(255,255,255,0.65);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.ts-header{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--border);background:rgba(34,129,204,0.05);}
+.ts-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);}
+.ts-add{background:rgba(13,107,78,0.10);border:1px solid rgba(13,107,78,0.28);color:#0D6B4E;
+  border-radius:5px;padding:5px 10px;font-family:'Lato',sans-serif;font-size:10px;font-weight:600;cursor:pointer;}
+.ts-item{display:flex;align-items:flex-start;gap:10px;padding:9px 15px;border-bottom:1px solid rgba(0,0,0,0.04);}
+.ts-item:last-child{border-bottom:none;}
+.ts-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px;}
+.tsi-call{background:rgba(34,129,204,0.12);color:var(--gold-light);}
+.tsi-note{background:rgba(90,104,120,0.12);color:var(--gray);}
+.tsi-renov{background:var(--amber-bg);color:#C27A00;}
+.tsi-vitality{background:var(--vitality-bg);color:#7B5EA7;}
+.tsi-ref{background:var(--referido-bg);color:#0D6B4E;}
+.tsi-agenda{background:rgba(34,129,204,0.12);color:#2281CC;}
+.ts-tipo{font-size:11px;font-weight:700;color:#1A1A1A;}
+.ts-nota{font-size:11px;color:#1E2A3A;margin-top:2px;line-height:1.4;}
+.ts-fecha{font-size:10px;color:var(--gray);margin-top:2px;}
+.ts-empty{padding:18px;text-align:center;font-size:12px;color:var(--gray);font-style:italic;}
+
+/* AGENDAS */
+.agenda-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:7px;margin-bottom:6px;
+  background:rgba(34,129,204,0.05);border:1px solid rgba(34,129,204,0.15);cursor:pointer;}
+.agenda-item:hover{background:rgba(34,129,204,0.10);}
+.agenda-fecha-badge{font-size:10px;font-weight:700;color:#2281CC;white-space:nowrap;}
+.agenda-hoy{background:rgba(192,57,43,0.05);border-color:rgba(192,57,43,0.20);}
+.agenda-hoy .agenda-fecha-badge{color:#C0392B;}
+.agenda-pasada{opacity:.6;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.30);z-index:500;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;padding:22px 26px;width:100%;max-width:460px;position:relative;overflow:hidden;max-height:90vh;overflow-y:auto;}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light),transparent);}
+.modal-title{font-family:'Merriweather',serif;font-size:15px;color:#1A1A1A;margin-bottom:14px;}
+.m-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:4px;display:block;}
+.m-input,.m-select,.m-textarea{width:100%;background:#F5F8FD;border:1px solid rgba(34,129,204,0.22);
+  border-radius:7px;padding:8px 11px;color:#1A1A1A;font-family:'Lato',sans-serif;font-size:13px;outline:none;margin-bottom:11px;}
+.m-input:focus,.m-select:focus,.m-textarea:focus{border-color:var(--gold);}
+.m-textarea{resize:vertical;min-height:60px;}
+.m-row{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+.btn-cancel{padding:8px 14px;border:1px solid var(--border);border-radius:7px;background:transparent;
+  font-family:'Lato',sans-serif;font-size:12px;cursor:pointer;color:var(--gray);}
+.btn-save{padding:8px 16px;border:none;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:#EEF3FB;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-save:hover{transform:translateY(-1px);}
+
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:rgba(34,129,204,0.25);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo-area">
+      <div class="login-logo-text">Nexussafe</div>
+      <div class="login-logo-sub">Seguimiento de Clientes</div>
+      <div class="login-divider"></div>
+    </div>
+    <label class="l-label">Usuario</label>
+    <input class="l-input" type="text" id="login-user" placeholder="Ingresa tu usuario" autocomplete="username">
+    <label class="l-label">Contraseña</label>
+    <input class="l-input" type="password" id="login-pass" placeholder="••••••••••"
+      onkeydown="if(event.key==='Enter')intentarLogin()">
+    <button class="l-btn" onclick="intentarLogin()">INGRESAR</button>
+    <div class="l-error" id="login-error">Usuario o contraseña incorrectos</div>
+    <div class="l-footer">Sistema interno · Nexussafe Ecuador</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);">Nexussafe</span>
+    <span style="color:var(--border);">|</span>
+    <span style="font-family:'Merriweather',serif;font-size:15px;color:#1A1A1A;">Seguimiento de Clientes</span>
+  </div>
+  <div class="topbar-right">
+    <button class="tab-btn active" id="tb-todos" onclick="showView('lista',this)">Todos</button>
+    <button class="tab-btn" id="tb-hoy" onclick="showView('hoy',this)">Hoy</button>
+    <button class="tab-btn" id="tb-referidos" onclick="showView('referidos',this)">Referidos</button>
+    <button class="tab-btn" id="tb-agendas" onclick="showView('agendas',this)">📅 Agendas</button>
+    <button class="tab-btn" id="tb-anulados" onclick="showView('anulados',this)">🔴 Recuperaciones</button>
+    <button class="tab-btn" id="tb-asesores" onclick="showView('asesores',this)">👤 Asesores</button>
+    <div class="sep"></div>
+    <button class="tab-btn" onclick="limpiarDatos()" style="color:#C27A00;">🗑 Limpiar datos</button>
+    <button class="tab-btn" onclick="cerrarSesion()" style="color:#C0392B;">⬡ Salir</button>
+  </div>
+</div>
+
+<div class="main">
+<div class="sidebar">
+  <div class="sb-section">
+    <span class="sb-label">Buscar</span>
+    <input class="search-input" id="buscador" placeholder="Nombre, cédula, contrato..." oninput="filtrarClientes()">
+  </div>
+  <div class="sb-section">
+    <span class="sb-label">Filtrar</span>
+    <select class="filter-select" id="filtro-aseg" onchange="filtrarClientes()">
+      <option value="">Todas las aseguradoras</option>
+      <option>Saludsa</option><option>BMI</option><option>BMI Vida</option>
+      <option>Humana</option><option>Confiamed</option><option>Asisken</option>
+      <option>Bupa</option><option>Ecuasanitas</option><option>Seg. Viajes</option>
+    </select>
+    <select class="filter-select" id="filtro-estado" onchange="filtrarClientes()">
+      <option value="">Todos los estados</option>
+      <option value="renovacion">Renovación próxima</option>
+      <option value="sincontacto">Sin contacto +60d</option>
+      <option value="vitality">Vitality pendiente</option>
+      <option value="referido">Referido pendiente</option>
+      <option value="anulado">Contrato anulado</option>
+    </select>
+    <select class="filter-select" id="filtro-asesor" onchange="filtrarClientes()">
+      <option value="">Todos los asesores</option>
+    </select>
+  </div>
+  <div class="sb-section">
+    <span class="sb-label">Alertas</span>
+    <div class="alert-item" onclick="aplicarFiltro('renovacion')">
+      <div class="a-dot dot-red"></div>
+      <div class="a-text">Renovación &lt;30d<div class="a-sub">Urgente</div></div>
+      <span class="a-cnt ac-red" id="cnt-30">0</span>
+    </div>
+    <div class="alert-item" onclick="aplicarFiltro('renovacion')">
+      <div class="a-dot dot-amber"></div>
+      <div class="a-text">Renovación 30–60d<div class="a-sub">Próximamente</div></div>
+      <span class="a-cnt ac-amber" id="cnt-60">0</span>
+    </div>
+    <div class="alert-item" onclick="aplicarFiltro('vitality')">
+      <div class="a-dot dot-vitality"></div>
+      <div class="a-text">Vitality pendiente<div class="a-sub">Solo Saludsa</div></div>
+      <span class="a-cnt ac-vitality" id="cnt-vit">0</span>
+    </div>
+    <div class="alert-item" onclick="aplicarFiltro('referido')">
+      <div class="a-dot dot-green"></div>
+      <div class="a-text">Solicitar referido<div class="a-sub">Sin gestión</div></div>
+      <span class="a-cnt ac-green" id="cnt-ref">0</span>
+    </div>
+    <div class="alert-item" onclick="aplicarFiltro('sincontacto')">
+      <div class="a-dot dot-amber"></div>
+      <div class="a-text">Sin contacto +60d<div class="a-sub">Riesgo fuga</div></div>
+      <span class="a-cnt ac-amber" id="cnt-sc">0</span>
+    </div>
+    <div class="alert-item" onclick="showView('agendas',document.getElementById('tb-agendas'))">
+      <div class="a-dot dot-blue"></div>
+      <div class="a-text">Agendas hoy<div class="a-sub">Citas pendientes</div></div>
+      <span class="a-cnt ac-blue" id="cnt-agenda">0</span>
+    </div>
+    <div class="alert-item" onclick="showView('anulados',document.getElementById('tb-anulados'))">
+      <div class="a-dot dot-red"></div>
+      <div class="a-text">Contratos anulados<div class="a-sub">Pendientes recuperar</div></div>
+      <span class="a-cnt ac-red" id="cnt-anulados">0</span>
+    </div>
+  </div>
+  <div class="sb-section">
+    <span class="sb-label">Resumen</span>
+    <div class="kpi-grid">
+      <div class="kpi-mini"><div class="kpi-val" id="kpi-total">0</div><div class="kpi-lbl">Clientes</div></div>
+      <div class="kpi-mini"><div class="kpi-val" id="kpi-gestion">0</div><div class="kpi-lbl">Gestionados hoy</div></div>
+      <div class="kpi-mini"><div class="kpi-val" id="kpi-ref-tot">0</div><div class="kpi-lbl">Referidos obtenidos</div></div>
+      <div class="kpi-mini"><div class="kpi-val" id="kpi-renov">0</div><div class="kpi-lbl">Renovaciones OK</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+  <!-- LISTA -->
+  <div id="vista-lista">
+    <div class="content-header">
+      <div class="content-title" id="lista-titulo">Todos los clientes</div>
+      <div class="btn-actions">
+        <label class="imp-btn">⬆ Importar Excel
+          <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
+        </label>
+        <button class="imp-btn" onclick="exportarExcel()" style="background:rgba(13,107,78,0.08);border-color:rgba(13,107,78,0.25);color:#0D6B4E;">⬇ Exportar Excel</button>
+        <button class="add-btn" onclick="abrirModalNuevo()">+ Nuevo cliente</button>
+      </div>
+    </div>
+    <div class="period-bar">
+      <select class="period-select" id="filtro-periodo" onchange="onPeriodoChange()">
+        <option value="total">Total general</option>
+        <option value="anio">Por año</option>
+        <option value="mes">Por mes</option>
+      </select>
+      <select class="period-select" id="filtro-anio" style="display:none" onchange="filtrarClientes()"></select>
+      <select class="period-select" id="filtro-mes" style="display:none" onchange="filtrarClientes()"></select>
+      <span class="period-badge" id="period-label">Todos los clientes</span>
+      <select class="period-select" id="filtro-orden" onchange="filtrarClientes()">
+        <option value="nombre">Ordenar: Nombre A-Z</option>
+        <option value="ingreso-asc">Ordenar: Fecha ingreso ↑ (más antiguo)</option>
+        <option value="ingreso-desc">Ordenar: Fecha ingreso ↓ (más reciente)</option>
+        <option value="vigencia-asc">Ordenar: Vigencia ↑ (vence antes)</option>
+      </select>
+    </div>
+    <div class="tabla-wrap">
+      <div class="tabla-head">
+        <div>Cliente</div><div>Aseguradora</div><div>Empresa</div><div>Contrato / Plan</div>
+        <div>Vigencia</div><div>Renovación</div><div>Último contacto</div>
+        <div>Vitality</div><div>Referido</div><div>Estatus</div><div></div>
+      </div>
+      <div id="tabla-body"></div>
+    </div>
+  </div>
+
+  <!-- CLIENTE -->
+  <div id="vista-cliente" style="display:none;">
+    <button class="back-btn" onclick="volverLista()">← Volver a la lista</button>
+    <div id="cliente-detail"></div>
+  </div>
+
+  <!-- AGENDAS -->
+  <div id="vista-agendas" style="display:none;">
+    <div class="content-header">
+      <div class="content-title">📅 Agendamientos</div>
+    </div>
+    <div id="agendas-content"></div>
+  </div>
+
+  <!-- ASESORES -->
+  <div id="vista-asesores" style="display:none;">
+    <div class="content-header">
+      <div class="content-title">👤 Gestión de Asesores</div>
+    </div>
+    <div id="asesores-content"></div>
+  </div>
+
+  <!-- RECUPERACIONES -->
+  <div id="vista-anulados" style="display:none;">
+    <div class="content-header">
+      <div class="content-title">🔴 Recuperaciones — Contratos Anulados</div>
+    </div>
+    <div id="anulados-content"></div>
+  </div>
+</div>
+</div>
+</div><!-- /app-screen -->
+
+<!-- MODAL SEGUIMIENTO -->
+<div class="modal-overlay" id="modal-seg">
+  <div class="modal">
+    <div class="modal-title" id="modal-seg-title">Registrar seguimiento</div>
+    <label class="m-label">Tipo de gestión</label>
+    <select class="m-select" id="seg-tipo" onchange="onTipoChange()">
+      <option value="llamada">📞 Llamada</option>
+      <option value="whatsapp">💬 WhatsApp</option>
+      <option value="visita">🤝 Visita</option>
+      <option value="renov">🔄 Renovación gestionada</option>
+      <option value="vitality">⚡ Vitality activado</option>
+      <option value="referido_sol">👥 Referido solicitado</option>
+      <option value="referido_obt">✅ Referido obtenido</option>
+      <option value="agenda">📅 Agendar cita</option>
+      <option value="nota">📝 Nota interna</option>
+    </select>
+    <div class="m-row">
+      <div><label class="m-label">Fecha</label><input class="m-input" type="date" id="seg-fecha"></div>
+      <div id="hora-wrap"><label class="m-label">Hora</label><input class="m-input" type="time" id="seg-hora"></div>
+    </div>
+    <label class="m-label">Notas</label>
+    <textarea class="m-textarea" id="seg-notas" placeholder="Resumen, compromisos, próximos pasos..."></textarea>
+    <div id="referido-extra" style="display:none;">
+      <label class="m-label">Nombre del referido</label>
+      <input class="m-input" type="text" id="seg-ref-nombre" placeholder="Nombre completo">
+      <label class="m-label">Teléfono del referido</label>
+      <input class="m-input" type="text" id="seg-ref-tel" placeholder="0999...">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-seg')">Cancelar</button>
+      <button class="btn-save" onclick="guardarSeguimiento()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BENEFICIARIO -->
+<div class="modal-overlay" id="modal-beneficiario">
+  <div class="modal">
+    <div class="modal-title" id="modal-ben-title">+ Nuevo beneficiario</div>
+    <div class="m-row">
+      <div><label class="m-label">Nombre completo *</label><input class="m-input" id="ben-nombre" type="text" placeholder="Juan Pérez"></div>
+      <div><label class="m-label">Cédula</label><input class="m-input" id="ben-cedula" type="text" placeholder="1700000000"></div>
+      <div><label class="m-label">Parentesco</label>
+        <select class="m-select" id="ben-parentesco">
+          <option value="CÓNYUGE">Cónyuge</option>
+          <option value="HIJO/A">Hijo/a</option>
+          <option value="PADRE">Padre</option>
+          <option value="MADRE">Madre</option>
+          <option value="HERMANO/A">Hermano/a</option>
+          <option value="OTRO">Otro</option>
+        </select>
+      </div>
+      <div><label class="m-label">Fecha de nacimiento</label><input class="m-input" id="ben-fechanac" type="date"></div>
+      <div style="grid-column:span 2;"><label class="m-label">Teléfono (opcional)</label><input class="m-input" id="ben-tel" type="text" placeholder="0999..."></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-beneficiario')">Cancelar</button>
+      <button class="btn-save" onclick="guardarBeneficiario()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTRATO -->
+<div class="modal-overlay" id="modal-contrato">
+  <div class="modal">
+    <div class="modal-title" id="modal-contrato-title">+ Nuevo contrato</div>
+    <div class="m-row">
+      <div><label class="m-label">Aseguradora</label>
+        <select class="m-select" id="ct-aseg" onchange="toggleVitalityContrato()">
+          <option>Saludsa</option><option>BMI</option><option>BMI Vida</option>
+          <option>Humana</option><option>Confiamed</option><option>Asisken</option>
+          <option>Bupa</option><option>Ecuasanitas</option><option>Seg. Viajes</option>
+        </select>
+      </div>
+      <div><label class="m-label">Segmento</label>
+        <select class="m-select" id="ct-seg" onchange="toggleVitalityContrato()">
+          <option>Individual</option><option>Familiar</option><option>Empresarial</option><option>Mayores</option><option>Vida</option><option>Plan Dental</option><option>Fideval</option>
+        </select>
+      </div>
+      <div><label class="m-label">N° Contrato / Póliza</label><input class="m-input" id="ct-contrato" type="text" placeholder="POL-0000001"></div>
+      <div><label class="m-label">Plan</label><input class="m-input" id="ct-plan" type="text" placeholder="Plan Gold"></div>
+      <div><label class="m-label">Deducible</label><input class="m-input" id="ct-deducible" type="text" placeholder="$500"></div>
+      <div><label class="m-label">Valor mensual ($)</label><input class="m-input" id="ct-mensualidad" type="text" placeholder="0.00"></div>
+      <div><label class="m-label">Cuotas pendientes</label><input class="m-input" id="ct-cuotas" type="number" min="0" placeholder="0"></div>
+      <div><label class="m-label">Empresa de ingreso</label>
+        <select class="m-select" id="ct-empresa">
+          <option value="Saludsa">Saludsa</option>
+          <option value="Ac&c Broker">Ac&amp;c Broker</option>
+        </select>
+      </div>
+      <div><label class="m-label">Fecha de venta</label><input class="m-input" id="ct-fechaventa" type="date" onchange="calcularVigenciaContrato()"></div>
+      <div><label class="m-label">Vigencia (auto)</label><input class="m-input" id="ct-vigencia" type="text" readonly style="background:#eef3fb;color:var(--gray);"></div>
+    </div>
+    <label class="m-label">Estatus</label>
+    <select class="m-select" id="ct-estatus"><option value="activo">✅ Activo</option><option value="anulado">❌ Anulado</option></select>
+    <select class="m-select" id="ct-vitality" style="display:none;">
+      <option value="pendiente">Vitality pendiente</option>
+      <option value="activo">Vitality activo</option>
+      <option value="na">No aplica</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-contrato')">Cancelar</button>
+      <button class="btn-save" onclick="guardarContrato()">Guardar contrato</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR CLIENTE -->
+<div class="modal-overlay" id="modal-editar">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar cliente</div>
+    <div class="m-row">
+      <div><label class="m-label">Nombre completo *</label><input class="m-input" id="ed-nombre" type="text"></div>
+      <div><label class="m-label">Cédula / RUC</label><input class="m-input" id="ed-cedula" type="text"></div>
+      <div><label class="m-label">Teléfono</label><input class="m-input" id="ed-tel" type="text"></div>
+      <div><label class="m-label">Fecha de nacimiento</label><input class="m-input" id="ed-fechanac-titular" type="date"></div>
+      <div><label class="m-label">Email cliente</label><input class="m-input" id="ed-email" type="email"></div>
+      <div><label class="m-label">Aseguradora</label>
+        <select class="m-select" id="ed-aseg" onchange="toggleVitalityEditar()">
+          <option>Saludsa</option><option>BMI</option><option>BMI Vida</option>
+          <option>Humana</option><option>Confiamed</option><option>Asisken</option>
+          <option>Bupa</option><option>Ecuasanitas</option><option>Seg. Viajes</option>
+        </select>
+      </div>
+      <div><label class="m-label">Segmento</label>
+        <select class="m-select" id="ed-seg" onchange="toggleVitalityEditar()">
+          <option>Individual</option><option>Familiar</option><option>Empresarial</option><option>Mayores</option><option>Vida</option><option>Plan Dental</option><option>Fideval</option>
+        </select>
+      </div>
+      <div><label class="m-label">N° Contrato / Póliza</label><input class="m-input" id="ed-contrato" type="text"></div>
+      <div><label class="m-label">Plan</label><input class="m-input" id="ed-plan" type="text"></div>
+      <div><label class="m-label">Deducible</label><input class="m-input" id="ed-deducible" type="text"></div>
+      <div><label class="m-label">Valor mensual ($)</label><input class="m-input" id="ed-mensualidad" type="text" placeholder="0.00"></div>
+      <div><label class="m-label">Cuotas pendientes</label><input class="m-input" id="ed-cuotas" type="number" min="0"></div>
+      <div><label class="m-label">Fecha de venta</label><input class="m-input" id="ed-fechaventa" type="date" onchange="calcularVigenciaEditar()"></div>
+      <div><label class="m-label">Vigencia hasta (auto)</label><input class="m-input" id="ed-vigencia" type="text" readonly style="background:#eef3fb;color:var(--gray);"></div>
+      <div><label class="m-label">Asesor de venta</label>
+        <select class="m-select" id="ed-asesor" onchange="autoEmailAsesorEditar()">
+        </select>
+      </div>
+      <div><label class="m-label">Email del asesor</label><input class="m-input" id="ed-asesor-email" type="email" readonly style="background:#eef3fb;color:var(--gray);"></div>
+    </div>
+    <label class="m-label">Empresa de ingreso</label>
+    <select class="m-select" id="ed-empresa">
+      <option value="Saludsa">Saludsa</option>
+      <option value="Ac&c Broker">Ac&amp;c Broker</option>
+    </select>
+    <label class="m-label">Estatus del contrato</label>
+    <select class="m-select" id="ed-estatus">
+      <option value="activo">✅ Activo</option>
+      <option value="anulado">❌ Anulado</option>
+    </select>
+    <label class="m-label">Vitality</label>
+    <select class="m-select" id="ed-vitality">
+      <option value="pendiente">Pendiente activación</option>
+      <option value="activo">Activo</option>
+      <option value="na">No aplica</option>
+    </select>
+    <label class="m-label">Satisfacción del cliente</label>
+    <select class="m-select" id="ed-sat">
+      <option value="">Sin evaluar</option>
+      <option value="inconforme">😞 Inconforme</option>
+      <option value="satisfecho">🙂 Satisfecho</option>
+      <option value="muy">😊 Muy satisfecho</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-editar')">Cancelar</button>
+      <button class="btn-save" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-nuevo">
+  <div class="modal">
+    <div class="modal-title">Nuevo cliente</div>
+    <div class="m-row">
+      <div><label class="m-label">Nombre completo *</label><input class="m-input" id="nc-nombre" type="text" placeholder="Juan Pérez"></div>
+      <div><label class="m-label">Cédula / RUC</label><input class="m-input" id="nc-cedula" type="text" placeholder="1700000000"></div>
+      <div><label class="m-label">Teléfono</label><input class="m-input" id="nc-tel" type="text" placeholder="0999..."></div>
+      <div><label class="m-label">Fecha de nacimiento</label><input class="m-input" id="nc-fechanac-titular" type="date"></div>
+      <div><label class="m-label">Email cliente</label><input class="m-input" id="nc-email" type="email" placeholder="correo@..."></div>
+      <div><label class="m-label">Aseguradora</label>
+        <select class="m-select" id="nc-aseg" onchange="toggleVitality()">
+          <option>Saludsa</option><option>BMI</option><option>BMI Vida</option>
+          <option>Humana</option><option>Confiamed</option><option>Asisken</option>
+          <option>Bupa</option><option>Ecuasanitas</option><option>Seg. Viajes</option>
+        </select>
+      </div>
+      <div><label class="m-label">Segmento</label>
+        <select class="m-select" id="nc-seg" onchange="toggleVitality()">
+          <option>Individual</option><option>Familiar</option><option>Empresarial</option><option>Mayores</option><option>Vida</option><option>Plan Dental</option><option>Fideval</option>
+        </select>
+      </div>
+      <div><label class="m-label">N° Contrato / Póliza</label><input class="m-input" id="nc-contrato" type="text" placeholder="POL-0000001"></div>
+      <div><label class="m-label">Plan</label><input class="m-input" id="nc-plan" type="text" placeholder="Plan Gold"></div>
+      <div><label class="m-label">Deducible</label><input class="m-input" id="nc-deducible" type="text" placeholder="$500"></div>
+      <div><label class="m-label">Valor mensual ($)</label><input class="m-input" id="nc-mensualidad" type="text" placeholder="0.00"></div>
+      <div><label class="m-label">Cuotas pendientes</label><input class="m-input" id="nc-cuotas" type="number" placeholder="0" min="0"></div>
+      <div><label class="m-label">Fecha de venta</label><input class="m-input" id="nc-fechaventa" type="date" onchange="calcularVigencia()"></div>
+      <div><label class="m-label">Vigencia hasta (auto)</label><input class="m-input" id="nc-vigencia" type="text" readonly placeholder="Se calcula automáticamente" style="background:#eef3fb;color:var(--gray);"></div>
+      <div><label class="m-label">Asesor de venta</label>
+        <select class="m-select" id="nc-asesor" onchange="autoEmailAsesor()">
+        </select>
+      </div>
+      <div><label class="m-label">Email del asesor</label><input class="m-input" id="nc-asesor-email" type="email" placeholder="Se llena automáticamente" readonly style="background:#eef3fb;color:var(--gray);"></div>
+    </div>
+    <label class="m-label">Empresa de ingreso</label>
+    <select class="m-select" id="nc-empresa">
+      <option value="Saludsa">Saludsa</option>
+      <option value="Ac&c Broker">Ac&amp;c Broker</option>
+    </select>
+    <label class="m-label">Estatus del contrato</label>
+    <select class="m-select" id="nc-estatus"><option value="activo">✅ Activo</option><option value="anulado">❌ Anulado</option></select>
+    <div id="nc-vitality-row" style="display:none;">
+      <label class="m-label">Vitality</label>
+      <select class="m-select" id="nc-vitality">
+        <option value="pendiente">Pendiente activación</option>
+        <option value="activo">Activo</option>
+        <option value="na">No aplica</option>
+      </select>
+    </div>
+    <label class="m-label">Satisfacción del cliente</label>
+    <select class="m-select" id="nc-sat">
+      <option value="">Sin evaluar</option>
+      <option value="inconforme">😞 Inconforme</option>
+      <option value="satisfecho">🙂 Satisfecho</option>
+      <option value="muy">😊 Muy satisfecho</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="cerrarModal('modal-nuevo')">Cancelar</button>
+      <button class="btn-save" onclick="guardarNuevo()">Crear cliente</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ AUTH ══
+const USUARIO='Asistentenexus', CLAVE='Nexus123456';
+function intentarLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const p=document.getElementById('login-pass').value;
+  if(u===USUARIO&&p===CLAVE){
+    sessionStorage.setItem('nxs_auth','1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app-screen').style.display='block';
+    document.getElementById('login-error').style.display='none';
+    init();
+  }else{
+    document.getElementById('login-error').style.display='block';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-pass').focus();
+  }
+}
+function limpiarDatos(){
+  if(confirm('¿Estás segura de que deseas eliminar TODOS los clientes? Esta acción no se puede deshacer.')){
+    localStorage.removeItem('nxs_clientes');
+    clientes=[];
+    actualizarContadores();
+    filtrarClientes();
+    alert('✅ Datos eliminados. El sistema está listo para información real.');
+  }
+}
+
+function cerrarSesion(){
+  sessionStorage.removeItem('nxs_auth');
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+}
+
+// ══ DATA ══
+const hoy=new Date();
+const todayStr=hoy.toISOString().slice(0,10);
+function diasHasta(f){if(!f)return 999;return Math.round((new Date(f)-hoy)/864e5);}
+function diasDesde(f){if(!f)return 999;return Math.round((hoy-new Date(f))/864e5);}
+
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+let clientes=JSON.parse(localStorage.getItem('nxs_clientes')||'null')||[];
+let clienteActivo=null, filtroActual='';
+function guardar(){localStorage.setItem('nxs_clientes',JSON.stringify(clientes));}
+
+// ══ ESTADO ══
+function getEstado(c){
+  if(c.estatus==='anulado') return 'anulado';
+  const dias=diasHasta(c.vigencia);
+  const sinC=c.seguimientos.filter(s=>s.tipo!=='agenda').length===0?999:diasDesde([...c.seguimientos].filter(s=>s.tipo!=='agenda').pop().fecha);
+  if(dias<=30) return 'riesgo';
+  if(dias<=60) return 'renovacion';
+  if(sinC>=60) return 'sincontacto';
+  if(c.aseg==='Saludsa'&&c.vitality==='pendiente') return 'vitality';
+  if(!c.referidoSol&&sinC<30) return 'referido';
+  return 'ok';
+}
+
+// ══ CONTADORES ══
+function actualizarContadores(){
+  let c30=0,c60=0,cvit=0,cref=0,csc=0,crenov=0,cgestion=0,crefObt=0,cAgenda=0;
+  clientes.forEach(c=>{
+    if(c.estatus!=='anulado'){
+      const dias=diasHasta(c.vigencia);
+      if(dias<=30) c30++; else if(dias<=60) c60++;
+      if(c.aseg==='Saludsa'&&c.vitality==='pendiente') cvit++;
+      if(!c.referidoSol) cref++;
+      const gs=c.seguimientos.filter(s=>s.tipo!=='agenda');
+      const sinC=gs.length===0?999:diasDesde(gs[gs.length-1].fecha);
+      if(sinC>=60) csc++;
+    }
+    c.seguimientos.forEach(s=>{
+      if(s.fecha===todayStr&&s.tipo!=='agenda') cgestion++;
+      if(s.tipo==='renov') crenov++;
+      if(s.tipo==='referido_obt') crefObt++;
+      if(s.tipo==='agenda'&&s.fecha===todayStr) cAgenda++;
+    });
+  });
+  document.getElementById('cnt-30').textContent=c30;
+  document.getElementById('cnt-60').textContent=c60;
+  document.getElementById('cnt-vit').textContent=cvit;
+  document.getElementById('cnt-ref').textContent=cref;
+  document.getElementById('cnt-sc').textContent=csc;
+  document.getElementById('cnt-agenda').textContent=cAgenda;
+  const totalAnulados=clientes.filter(c=>c.estatus==='anulado'||(c.contratos&&c.contratos.some(ct=>ct.estatus==='anulado'))).length;
+  document.getElementById('cnt-anulados').textContent=totalAnulados;
+  document.getElementById('kpi-total').textContent=clientes.length;
+  document.getElementById('kpi-gestion').textContent=cgestion;
+  document.getElementById('kpi-ref-tot').textContent=crefObt;
+  document.getElementById('kpi-renov').textContent=crenov;
+  // Asesores
+  const asesores=[...new Set(clientes.map(c=>c.asesor).filter(Boolean))].sort();
+  const sel=document.getElementById('filtro-asesor');
+  const val=sel.value;
+  sel.innerHTML='<option value="">Todos los asesores</option>'+asesores.map(a=>`<option>${a}</option>`).join('');
+  sel.value=val;
+}
+
+// ══ PERIODO ══
+function initPeriodoSelects(){
+  const anios=[...new Set(clientes.map(c=>c.fechaIngreso?c.fechaIngreso.slice(0,4):null).filter(Boolean))].sort().reverse();
+  const sA=document.getElementById('filtro-anio');
+  const curVal=sA.value;
+  sA.innerHTML=anios.map(a=>`<option value="${a}">${a}</option>`).join('');
+  if(anios.includes(curVal)) sA.value=curVal;
+  const sM=document.getElementById('filtro-mes');
+  sM.innerHTML=MESES.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  sM.value=hoy.getMonth()+1;
+}
+
+function onPeriodoChange(){
+  const p=document.getElementById('filtro-periodo').value;
+  document.getElementById('filtro-anio').style.display=p!=='total'?'inline-block':'none';
+  document.getElementById('filtro-mes').style.display=p==='mes'?'inline-block':'none';
+  filtrarClientes();
+}
+
+// ══ FILTRAR ══
+function filtrarClientes(){
+  const q=document.getElementById('buscador').value.toLowerCase();
+  const aseg=document.getElementById('filtro-aseg').value;
+  const est=document.getElementById('filtro-estado').value||filtroActual;
+  const asesorF=document.getElementById('filtro-asesor').value;
+  const periodo=document.getElementById('filtro-periodo').value;
+  const anioF=document.getElementById('filtro-anio').value;
+  const mesF=parseInt(document.getElementById('filtro-mes').value);
+
+  let label='Todos los clientes';
+  if(periodo==='anio'&&anioF) label=`Clientes de ${anioF}`;
+  if(periodo==='mes'&&anioF) label=`${MESES[mesF-1]} ${anioF}`;
+  document.getElementById('period-label').textContent=label;
+
+  const lista=clientes.filter(c=>{
+    if(q&&!c.nombre.toLowerCase().includes(q)&&!(c.cedula||'').includes(q)&&!(c.contrato||'').toLowerCase().includes(q)) return false;
+    if(aseg&&c.aseg!==aseg) return false;
+    if(asesorF&&c.asesor!==asesorF) return false;
+    if(est){
+      const estado=getEstado(c);
+      const dias=diasHasta(c.vigencia);
+      if(est==='renovacion'&&dias>60) return false;
+      if(est==='sincontacto'&&estado!=='sincontacto') return false;
+      if(est==='vitality'&&!(c.aseg==='Saludsa'&&c.vitality==='pendiente')) return false;
+      if(est==='referido'&&c.referidoSol) return false;
+      if(est==='anulado'&&c.estatus!=='anulado') return false;
+    }
+    if(periodo!=='total'&&c.fechaIngreso){
+      const aC=c.fechaIngreso.slice(0,4);
+      const mC=parseInt(c.fechaIngreso.slice(5,7));
+      if(anioF&&aC!==anioF) return false;
+      if(periodo==='mes'&&mC!==mesF) return false;
+    }
+    return true;
+  });
+
+  // Ordenar
+  const orden=document.getElementById('filtro-orden').value;
+  if(orden==='nombre') lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  else if(orden==='ingreso-asc') lista.sort((a,b)=>(a.fechaIngreso||'').localeCompare(b.fechaIngreso||''));
+  else if(orden==='ingreso-desc') lista.sort((a,b)=>(b.fechaIngreso||'').localeCompare(a.fechaIngreso||''));
+  else if(orden==='vigencia-asc') lista.sort((a,b)=>(a.vigencia||'9999').localeCompare(b.vigencia||'9999'));
+
+  renderTabla(lista);
+}
+
+// ══ RENDER TABLA ══
+function renderTabla(lista){
+  const body=document.getElementById('tabla-body');
+  if(!lista.length){body.innerHTML='<div style="padding:18px;text-align:center;font-size:12px;color:var(--gray);font-style:italic;">No se encontraron clientes</div>';return;}
+  const satBadge={inconforme:'<span class="badge sat-inc">😞</span>',satisfecho:'<span class="badge sat-sat">🙂</span>',muy:'<span class="badge sat-muy">😊</span>'};
+  body.innerHTML=lista.map(c=>{
+    const dias=diasHasta(c.vigencia);
+    const gs=c.seguimientos.filter(s=>s.tipo!=='agenda');
+    const ultF=gs.length>0?gs[gs.length-1].fecha:null;
+    const diasSin=ultF?diasDesde(ultF):999;
+    const renovB=c.estatus==='anulado'?'<span style="font-size:10px;color:var(--gray);">—</span>':dias<=30?`<span class="badge badge-riesgo">${dias}d</span>`:dias<=60?`<span class="badge badge-renov">${dias}d</span>`:`<span class="badge badge-ok">${dias}d</span>`;
+    const contB=!ultF?'<span class="badge badge-riesgo">Nunca</span>':diasSin>=60?`<span class="badge badge-renov">${diasSin}d</span>`:`<span style="font-size:10px;color:var(--gray);">${diasSin}d</span>`;
+    const vitB=c.aseg==='Saludsa'?(c.vitality==='activo'?'<span class="badge badge-vitality">✓</span>':c.vitality==='pendiente'?'<span class="badge badge-renov">⏳</span>':'-'):'-';
+    const refB=c.referidoSol?'<span class="badge badge-referido">✓</span>':'<span style="font-size:10px;color:var(--gray);">—</span>';
+    const estB=c.estatus==='anulado'?'<span class="badge badge-anulado">Anulado</span>':'<span class="badge badge-activo">Activo</span>';
+    const agHoy=c.seguimientos.some(s=>s.tipo==='agenda'&&s.fecha===todayStr);
+    return `<div class="tabla-row" onclick="verCliente(${c.id})" style="${c.estatus==='anulado'?'opacity:.7':''}">
+      <div><div class="t-nombre">${c.nombre}${agHoy?' <span class="badge badge-activo" style="font-size:8px;">📅 Hoy</span>':''}</div>
+        <div class="t-sub">${c.cedula||'—'} · ${c.asesor||'—'}</div></div>
+      <div><span class="badge badge-aseg">${c.aseg}</span></div>
+      <div class="t-cell" style="font-size:10px;">${c.empresa||'—'}</div>
+      <div class="t-cell">${c.contrato||'—'}<br><span style="font-size:9px;color:var(--gray);">${c.plan||''}</span></div>
+      <div class="t-cell" style="font-size:10px;">${c.vigencia||'—'}</div>
+      <div class="t-center">${renovB}</div>
+      <div class="t-center">${contB}</div>
+      <div class="t-center">${vitB}</div>
+      <div class="t-center">${refB}</div>
+      <div class="t-center">${estB}</div>
+      <div class="t-center"><div class="icon-btn" onclick="event.stopPropagation();abrirModalSeg(${c.id})">+</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══ VISTA CLIENTE ══
+function verCliente(id){
+  clienteActivo=clientes.find(c=>c.id===id);
+  if(!clienteActivo) return;
+  document.getElementById('vista-lista').style.display='none';
+  document.getElementById('vista-agendas').style.display='none';
+  document.getElementById('vista-cliente').style.display='block';
+  renderCliente();
+}
+function volverLista(){
+  clienteActivo=null;
+  document.getElementById('vista-cliente').style.display='none';
+  document.getElementById('vista-lista').style.display='block';
+  filtrarClientes();
+}
+
+function renderCliente(){
+  const c=clienteActivo;
+  const dias=diasHasta(c.vigencia);
+  const initials=c.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const gs=c.seguimientos.filter(s=>s.tipo!=='agenda');
+  const ultF=gs.length>0?gs[gs.length-1].fecha:'Nunca';
+  const diasSin=gs.length>0?diasDesde(gs[gs.length-1].fecha):'—';
+
+  const dBadge=c.estatus==='anulado'?'':dias<=30?`<span class="badge badge-riesgo">Vence en ${dias}d</span>`:dias<=60?`<span class="badge badge-renov">Vence en ${dias}d</span>`:`<span class="badge badge-ok">Vigente</span>`;
+  const vBadge=c.aseg==='Saludsa'&&c.vitality==='pendiente'?'<span class="badge badge-renov">Vitality ⏳</span>':c.vitality==='activo'?'<span class="badge badge-vitality">Vitality ✓</span>':'';
+  const rBadge=c.referidoSol?'<span class="badge badge-referido">Referido ✓</span>':'';
+  const eBadge=c.estatus==='anulado'?'<span class="badge badge-anulado">Contrato anulado</span>':'<span class="badge badge-activo">Activo</span>';
+  const satMap={inconforme:'😞 Inconforme',satisfecho:'🙂 Satisfecho',muy:'😊 Muy satisfecho'};
+  const satCls={inconforme:'sat-inc',satisfecho:'sat-sat',muy:'sat-muy'};
+  const satBadgeH=c.satisfaccion?`<span class="badge ${satCls[c.satisfaccion]}">${satMap[c.satisfaccion]}</span>`:'<span style="font-size:10px;color:var(--gray);">Sin evaluar</span>';
+  const moraBadge=c.cuotasPendientes>0?`<span class="badge badge-anulado">⚠ ${c.cuotasPendientes} cuota${c.cuotasPendientes>1?'s':''} pendiente${c.cuotasPendientes>1?'s':''}</span>`:'';
+  const vBtn=c.aseg==='Saludsa'&&c.vitality==='pendiente'?`<button class="action-btn btn-vitality" onclick="abrirModalSegTipo('vitality')">⚡ Vitality</button>`:'';
+  const emailBtn=c.asesorEmail?`<button class="action-btn btn-email" onclick="emailAsesor()">✉️ Email asesor</button>`:'';
+
+  const contratoHtml=`<div class="contrato-area">
+    ${c.contratoDoc?`<span class="contrato-link" onclick="verContrato()">📄 ${c.contratoDoc.nombre}</span>`:'<span style="font-size:10px;color:var(--gray);">Sin documento</span>'}
+    <label class="contrato-label">⬆ Cargar<input type="file" accept=".pdf,.jpg,.png,.doc,.docx" style="display:none" onchange="cargarContrato(event)"></label>
+  </div>`;
+
+  const satSelector=`<div class="sat-selector">
+    ${['inconforme','satisfecho','muy'].map(s=>`<span class="sat-opt so-${s} ${c.satisfaccion===s?'active':''}" onclick="setSatisfaccion('${s}',this)">${satMap[s]}</span>`).join('')}
+  </div>`;
+
+  const agendas=c.seguimientos.filter(s=>s.tipo==='agenda').sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const agHtml=agendas.length?agendas.map(a=>`
+    <div class="agenda-item ${a.fecha===todayStr?'agenda-hoy':a.fecha<todayStr?'agenda-pasada':''}">
+      <span class="agenda-fecha-badge">📅 ${a.fecha}${a.hora?' '+a.hora:''}</span>
+      <span style="font-size:11px;color:#1E2A3A;flex:1;">${a.notas||'Cita agendada'}</span>
+      ${a.fecha===todayStr?'<span class="badge badge-riesgo">Hoy</span>':a.fecha<todayStr?'<span class="badge" style="background:rgba(90,104,120,0.10);color:var(--gray);border:none;">Pasada</span>':'<span class="badge badge-ok">Próxima</span>'}
+    </div>`).join(''):'<span style="font-size:11px;color:var(--gray);">Sin agendas registradas</span>';
+
+  const refObt=c.seguimientos.filter(s=>s.tipo==='referido_obt').length;
+  const refSol=c.seguimientos.filter(s=>s.tipo==='referido_sol').length;
+
+  const tipoI={llamada:'📞',whatsapp:'💬',visita:'🤝',renov:'🔄',vitality:'⚡',referido_sol:'👥',referido_obt:'✅',agenda:'📅',nota:'📝'};
+  const tipoC={llamada:'tsi-call',whatsapp:'tsi-call',visita:'tsi-call',renov:'tsi-renov',vitality:'tsi-vitality',referido_sol:'tsi-ref',referido_obt:'tsi-ref',agenda:'tsi-agenda',nota:'tsi-note'};
+  const tipoL={llamada:'Llamada',whatsapp:'WhatsApp',visita:'Visita',renov:'Renovación gestionada',vitality:'Vitality activado',referido_sol:'Referido solicitado',referido_obt:'Referido obtenido',agenda:'Cita agendada',nota:'Nota interna'};
+  const segHtml=c.seguimientos.length?[...c.seguimientos].reverse().map(s=>`
+    <div class="ts-item">
+      <div class="ts-icon ${tipoC[s.tipo]||'tsi-note'}">${tipoI[s.tipo]||'📝'}</div>
+      <div style="flex:1;">
+        <div class="ts-tipo">${tipoL[s.tipo]||s.tipo}${s.tipo==='agenda'&&s.hora?' · '+s.hora:''}</div>
+        <div class="ts-nota">${s.notas||'—'}</div>
+        ${s.refNombre?`<div class="ts-nota" style="color:#0D6B4E;margin-top:2px;">👤 ${s.refNombre}${s.refTel?' · '+s.refTel:''}</div>`:''}
+        <div class="ts-fecha">${s.fecha}</div>
+      </div>
+    </div>`).join(''):'<div class="ts-empty">Sin gestiones registradas</div>';
+
+  document.getElementById('cliente-detail').innerHTML=`
+    <div class="cliente-header">
+      <div class="ch-avatar">${initials}</div>
+      <div class="ch-info">
+        <div class="ch-nombre">${c.nombre}</div>
+        <div class="ch-meta">
+          <span>🪪 ${c.cedula||'—'}</span><span>📱 ${c.tel||'—'}</span>
+          <span>✉️ ${c.email||'—'}</span>
+          <span>👤 ${c.asesor||'—'}${c.asesorEmail?' ('+c.asesorEmail+')':''}</span>
+        </div>
+        <div class="ch-badges">${eBadge}${dBadge}${vBadge}${rBadge}${satBadgeH}${moraBadge}</div>
+      </div>
+      <div class="ch-actions">
+        <button class="action-btn btn-call" onclick="abrirModalSeg(${c.id})">📞 Gestionar</button>
+        <button class="action-btn btn-agenda" onclick="abrirModalSegTipo('agenda')">📅 Agendar</button>
+        <button class="action-btn btn-referido" onclick="abrirModalSegTipo('referido_sol')">👥 Referido</button>
+        ${vBtn}${emailBtn}
+        <button class="action-btn btn-email" onclick="abrirModalEditar(${c.id})" style="background:rgba(90,104,120,0.10);border-color:rgba(90,104,120,0.28);color:#5A6878;">✏️ Editar</button>
+      </div>
+    </div>
+
+    <!-- CONTRATOS -->
+    <div class="timeline-section" style="margin-bottom:14px;">
+      <div class="ts-header">
+        <span class="ts-title">Contratos / Pólizas</span>
+        <button class="ts-add" onclick="abrirModalContrato()">+ Agregar contrato</button>
+      </div>
+      ${renderContratos(c)}
+    </div>
+
+    <!-- BENEFICIARIOS -->
+    <div class="timeline-section" style="margin-bottom:14px;">
+      <div class="ts-header">
+        <span class="ts-title">Beneficiarios</span>
+        <button class="ts-add" onclick="abrirModalBeneficiario()">+ Agregar beneficiario</button>
+      </div>
+      <!-- Titular como beneficiario -->
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid rgba(0,0,0,0.05);background:rgba(34,129,204,0.03);">
+        <div style="font-size:11px;color:var(--gray);flex:1;">¿El titular <strong>${c.nombre}</strong> también es beneficiario del seguro?</div>
+        <div style="display:flex;gap:8px;">
+          <span class="sat-opt so-muy ${c.titularBeneficiario===true?'active':''}" onclick="setTitularBeneficiario(true,this)" style="font-size:10px;">✅ Sí, es beneficiario</span>
+          <span class="sat-opt so-inc ${c.titularBeneficiario===false?'active':''}" onclick="setTitularBeneficiario(false,this)" style="font-size:10px;">❌ Solo pagador</span>
+        </div>
+      </div>
+      ${renderBeneficiarios(c)}
+    </div>
+
+    <div class="detalle-grid" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="detalle-card dc-green">
+        <div class="dc-label">Referidos</div>
+        <div class="dc-val">${refObt}</div>
+        <div class="dc-sub">Solicitados: ${refSol}</div>
+      </div>
+      <div class="detalle-card dc-blue">
+        <div class="dc-label">Satisfacción del cliente</div>
+        ${satSelector}
+      </div>
+      <div class="detalle-card dc-blue" style="grid-column:span 1;">
+        <div class="dc-label">Agendas</div>
+        <div style="margin-top:8px;">${agHtml}</div>
+      </div>
+    </div>
+    <div class="timeline-section">
+      <div class="ts-header">
+        <span class="ts-title">Historial de seguimientos</span>
+        <button class="ts-add" onclick="abrirModalSeg(${c.id})">+ Nuevo registro</button>
+      </div>
+      ${segHtml}
+    </div>`;
+}
+
+// ══ BENEFICIARIOS ══
+function calcularEdad(fechaNac){
+  if(!fechaNac) return '—';
+  const hoyD=new Date();
+  const nac=new Date(fechaNac);
+  let edad=hoyD.getFullYear()-nac.getFullYear();
+  const m=hoyD.getMonth()-nac.getMonth();
+  if(m<0||(m===0&&hoyD.getDate()<nac.getDate())) edad--;
+  return edad+' años';
+}
+
+function renderBeneficiarios(c){
+  const lista=c.beneficiarios||[];
+
+  // Construir lista completa incluyendo titular si aplica
+  const todos=[];
+  if(c.titularBeneficiario===true){
+    todos.push({
+      nombre:c.nombre, cedula:c.cedula||'—', tel:c.tel||'—',
+      fechaNac:c.fechaNacTitular||'—', parentesco:'TITULAR', esTitular:true,
+      edad:c.fechaNacTitular?calcularEdad(c.fechaNacTitular):'—'
+    });
+  }
+  lista.forEach(b=>todos.push({...b,esTitular:false,edad:calcularEdad(b.fechaNac)}));
+
+  // Resumen conteo
+  const totalPersonas=todos.length;
+  const resumenHtml=`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 15px;background:rgba(34,129,204,0.05);border-bottom:1px solid var(--border);">
+      <span style="font-size:11px;color:var(--gold-light);font-weight:700;">👥 Total de personas en el contrato: ${totalPersonas}</span>
+      ${c.titularBeneficiario===true?'<span class="badge badge-activo">Titular incluido</span>':c.titularBeneficiario===false?'<span class="badge badge-anulado">Titular solo pagador</span>':''}
+    </div>`;
+
+  if(!todos.length) return '<div class="ts-empty">Indica si el titular es beneficiario y/o agrega personas adicionales.</div>';
+
+  // Cabecera tabla
+  const cabeceraHtml=`
+    <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1fr 1fr 0.8fr 0.5fr;
+      gap:4px;padding:7px 15px;background:rgba(34,129,204,0.06);border-bottom:1px solid var(--border);">
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Nombre completo</div>
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Cédula</div>
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Teléfono</div>
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">F. Nacimiento</div>
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Edad</div>
+      <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Parentesco</div>
+      <div></div>
+    </div>`;
+
+  const filasHtml=todos.map((b,i)=>{
+    const esTitular=b.esTitular;
+    return `<div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1fr 1fr 0.8fr 0.5fr;
+      gap:4px;padding:8px 15px;border-bottom:1px solid rgba(0,0,0,0.04);align-items:center;
+      background:${esTitular?'rgba(34,129,204,0.04)':''};">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;
+          background:${esTitular?'rgba(34,129,204,0.15)':'rgba(13,107,78,0.12)'};
+          display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
+          color:${esTitular?'var(--gold-light)':'#0D6B4E'};">
+          ${b.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#1A1A1A;">${b.nombre}</div>
+          ${esTitular?'<span style="font-size:9px;color:var(--gold-light);">Titular del contrato</span>':''}
+        </div>
+      </div>
+      <div style="font-size:11px;color:#1E2A3A;">🪪 ${b.cedula||'—'}</div>
+      <div style="font-size:11px;color:#1E2A3A;">📱 ${b.tel||'—'}</div>
+      <div style="font-size:11px;color:#1E2A3A;">🎂 ${b.fechaNac||'—'}</div>
+      <div style="font-size:11px;color:var(--gray);">${b.edad||'—'}</div>
+      <div><span class="badge ${esTitular?'badge-aseg':'badge-referido'}">${b.parentesco||'—'}</span></div>
+      <div style="display:flex;gap:4px;justify-content:center;">
+        ${!esTitular?`
+          <button class="icon-btn" onclick="editarBeneficiario(${i-(c.titularBeneficiario===true?1:0)})" title="Editar">✏️</button>
+          <button class="icon-btn" style="color:#C0392B;" onclick="eliminarBeneficiario(${i-(c.titularBeneficiario===true?1:0)})" title="Eliminar">🗑</button>
+        `:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return resumenHtml+cabeceraHtml+filasHtml;
+}
+
+function setTitularBeneficiario(val,el){
+  if(!clienteActivo) return;
+  clienteActivo.titularBeneficiario=val;
+  guardar();
+  document.querySelectorAll('.sat-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+}
+
+let benefEditIndex=null;
+function abrirModalBeneficiario(idx=null){
+  benefEditIndex=idx;
+  const b=idx!==null&&clienteActivo.beneficiarios?clienteActivo.beneficiarios[idx]:null;
+  document.getElementById('ben-nombre').value=b?b.nombre:'';
+  document.getElementById('ben-cedula').value=b?b.cedula:'';
+  document.getElementById('ben-parentesco').value=b?b.parentesco:'';
+  document.getElementById('ben-fechanac').value=b?b.fechaNac:'';
+  document.getElementById('ben-tel').value=b?b.tel:'';
+  document.getElementById('modal-ben-title').textContent=idx!==null?'✏️ Editar beneficiario':'+ Nuevo beneficiario';
+  document.getElementById('modal-beneficiario').classList.add('open');
+}
+
+function editarBeneficiario(idx){ abrirModalBeneficiario(idx); }
+
+function eliminarBeneficiario(idx){
+  if(!confirm('¿Eliminar este beneficiario?')) return;
+  clienteActivo.beneficiarios.splice(idx,1);
+  guardar();
+  renderCliente();
+}
+
+function guardarBeneficiario(){
+  const nombre=document.getElementById('ben-nombre').value.trim().toUpperCase();
+  if(!nombre){alert('El nombre es requerido');return;}
+  if(!clienteActivo.beneficiarios) clienteActivo.beneficiarios=[];
+  const b={
+    nombre,
+    cedula:document.getElementById('ben-cedula').value.trim(),
+    parentesco:document.getElementById('ben-parentesco').value.trim().toUpperCase(),
+    fechaNac:document.getElementById('ben-fechanac').value,
+    tel:document.getElementById('ben-tel').value.trim(),
+  };
+  if(benefEditIndex!==null) clienteActivo.beneficiarios[benefEditIndex]=b;
+  else clienteActivo.beneficiarios.push(b);
+  guardar();
+  cerrarModal('modal-beneficiario');
+  renderCliente();
+}
+
+// ══ CONTRATOS MÚLTIPLES ══
+function renderContratos(c){
+  const contratos=c.contratos||[];
+  // Si no tiene array de contratos pero sí tiene datos del contrato principal, migrarlo
+  if(!c.contratos&&c.contrato){
+    c.contratos=[{
+      id:1,aseg:c.aseg,seg:c.seg,empresa:c.empresa||'',
+      contrato:c.contrato,plan:c.plan,deducible:c.deducible,
+      mensualidad:c.mensualidad||'',cuotasPendientes:c.cuotasPendientes||0,
+      fechaVenta:c.fechaVenta||'',vigencia:c.vigencia||'',
+      estatus:c.estatus||'activo',vitality:c.vitality||'na',
+      contratoDoc:c.contratoDoc||null,
+    }];
+    guardar();
+  }
+  if(!c.contratos||!c.contratos.length){
+    return '<div class="ts-empty">Sin contratos registrados. Usa "+ Agregar contrato" para comenzar.</div>';
+  }
+  return c.contratos.map((ct,i)=>{
+    const dias=diasHasta(ct.vigencia);
+    const estadoColor=ct.estatus==='anulado'?'#C0392B':dias<=30?'#C0392B':dias<=60?'#C27A00':'#0D6B4E';
+    const estadoText=ct.estatus==='anulado'?'Anulado':dias<=30?`Vence en ${dias}d`:dias<=60?`Renovar en ${dias}d`:'Vigente';
+    const vitBadge=ct.aseg==='Saludsa'?(ct.vitality==='activo'?'<span class="badge badge-vitality" style="margin-left:6px;">Vitality ✓</span>':ct.vitality==='pendiente'?'<span class="badge badge-renov" style="margin-left:6px;">Vitality ⏳</span>':''):'';
+    const cuotaBadge=ct.cuotasPendientes>0?`<span class="badge badge-anulado" style="margin-left:6px;">⚠ ${ct.cuotasPendientes} cuota${ct.cuotasPendientes>1?'s':''}</span>`:'';
+    return `<div style="display:grid;grid-template-columns:0.8fr 0.8fr 0.8fr 0.7fr 0.7fr 0.6fr auto;gap:8px;align-items:center;
+      padding:10px 15px;border-bottom:1px solid rgba(0,0,0,0.05);">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#1A1A1A;">${ct.contrato||'—'}</div>
+        <div style="font-size:9px;color:var(--gray);">${ct.aseg} · ${ct.seg}</div>
+      </div>
+      <div style="font-size:11px;color:#1E2A3A;">${ct.plan||'—'}<br><span style="font-size:9px;color:var(--gray);">Ded: ${ct.deducible||'—'}</span></div>
+      <div style="font-size:11px;color:#1E2A3A;">$${ct.mensualidad||'0'}/mes<br><span style="font-size:9px;color:var(--gray);">Empresa: ${ct.empresa||'—'}</span></div>
+      <div style="font-size:10px;color:var(--gray);">${ct.fechaVenta||'—'}<br><span style="font-size:9px;">→ ${ct.vigencia||'—'}</span></div>
+      <div style="font-size:11px;font-weight:700;color:${estadoColor};">${estadoText}${vitBadge}${cuotaBadge}</div>
+      <div><span class="badge ${ct.estatus==='anulado'?'badge-anulado':'badge-activo'}">${ct.estatus==='anulado'?'Anulado':'Activo'}</span></div>
+      <div style="display:flex;gap:5px;">
+        <button class="icon-btn" onclick="editarContrato(${i})" title="Editar">✏️</button>
+        <button class="icon-btn" style="color:#C0392B;" onclick="eliminarContrato(${i})" title="Eliminar">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let contratoEditIndex=null;
+function abrirModalContrato(idx=null){
+  contratoEditIndex=idx;
+  const c=clienteActivo;
+  const ct=idx!==null&&c.contratos?c.contratos[idx]:null;
+  document.getElementById('ct-aseg').value=ct?ct.aseg:'Saludsa';
+  document.getElementById('ct-seg').value=ct?ct.seg:'Individual';
+  document.getElementById('ct-empresa').value=ct?ct.empresa||'Saludsa':'Saludsa';
+  document.getElementById('ct-contrato').value=ct?ct.contrato:'';
+  document.getElementById('ct-plan').value=ct?ct.plan:'';
+  document.getElementById('ct-deducible').value=ct?ct.deducible:'';
+  document.getElementById('ct-mensualidad').value=ct?ct.mensualidad:'';
+  document.getElementById('ct-cuotas').value=ct?ct.cuotasPendientes||0:0;
+  document.getElementById('ct-fechaventa').value=ct?ct.fechaVenta:'';
+  document.getElementById('ct-vigencia').value=ct?ct.vigencia:'';
+  document.getElementById('ct-estatus').value=ct?ct.estatus:'activo';
+  document.getElementById('ct-vitality').style.display=document.getElementById('ct-aseg').value==='Saludsa'?'block':'none';
+  document.getElementById('ct-vitality').value=ct?ct.vitality||'na':'pendiente';
+  document.getElementById('modal-contrato-title').textContent=idx!==null?'✏️ Editar contrato':'+ Nuevo contrato';
+  document.getElementById('modal-contrato').classList.add('open');
+}
+
+function editarContrato(idx){ abrirModalContrato(idx); }
+
+function eliminarContrato(idx){
+  if(!confirm('¿Eliminar este contrato?')) return;
+  clienteActivo.contratos.splice(idx,1);
+  guardar();
+  renderCliente();
+}
+
+function calcularVigenciaContrato(){
+  const fv=document.getElementById('ct-fechaventa').value;
+  if(!fv) return;
+  const d=new Date(fv);
+  d.setFullYear(d.getFullYear()+1);
+  document.getElementById('ct-vigencia').value=d.toISOString().slice(0,10);
+}
+
+function toggleVitalityContrato(){
+  const aseg=document.getElementById('ct-aseg').value;
+  const seg=document.getElementById('ct-seg').value;
+  const aplica=aseg==='Saludsa'&&seg!=='Plan Dental'&&seg!=='Fideval';
+  document.getElementById('ct-vitality').style.display=aplica?'block':'none';
+  if(!aplica) document.getElementById('ct-vitality').value='na';
+}
+
+function guardarContrato(){
+  const c=clienteActivo;
+  if(!c.contratos) c.contratos=[];
+  const ct={
+    id:contratoEditIndex!==null?c.contratos[contratoEditIndex].id:Date.now(),
+    aseg:document.getElementById('ct-aseg').value,
+    seg:document.getElementById('ct-seg').value,
+    empresa:document.getElementById('ct-empresa').value,
+    contrato:document.getElementById('ct-contrato').value.toUpperCase(),
+    plan:document.getElementById('ct-plan').value.toUpperCase(),
+    deducible:document.getElementById('ct-deducible').value.toUpperCase(),
+    mensualidad:document.getElementById('ct-mensualidad').value,
+    cuotasPendientes:parseInt(document.getElementById('ct-cuotas').value)||0,
+    fechaVenta:document.getElementById('ct-fechaventa').value,
+    vigencia:document.getElementById('ct-vigencia').value,
+    estatus:document.getElementById('ct-estatus').value,
+    vitality:document.getElementById('ct-aseg').value==='Saludsa'?document.getElementById('ct-vitality').value:'na',
+    contratoDoc:null,
+  };
+  if(contratoEditIndex!==null) c.contratos[contratoEditIndex]=ct;
+  else c.contratos.push(ct);
+  // Sincronizar vigencia/aseg del cliente con el primer contrato activo
+  const primerActivo=c.contratos.find(x=>x.estatus!=='anulado');
+  if(primerActivo){
+    c.vigencia=primerActivo.vigencia;
+    c.aseg=primerActivo.aseg;
+    c.fechaIngreso=primerActivo.fechaVenta||c.fechaIngreso;
+  }
+  guardar();
+  cerrarModal('modal-contrato');
+  actualizarContadores();
+  renderCliente();
+}
+
+// ══ SATISFACCION ══
+function setSatisfaccion(val,el){
+  if(!clienteActivo) return;
+  clienteActivo.satisfaccion=val;
+  guardar();
+  document.querySelectorAll('.sat-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ══ CONTRATO DOC ══
+function cargarContrato(event){
+  const file=event.target.files[0];
+  if(!file||!clienteActivo) return;
+  const reader=new FileReader();
+  reader.onload=e=>{clienteActivo.contratoDoc={nombre:file.name,data:e.target.result};guardar();renderCliente();};
+  reader.readAsDataURL(file);
+}
+function verContrato(){
+  if(!clienteActivo?.contratoDoc) return;
+  const a=document.createElement('a');
+  a.href=clienteActivo.contratoDoc.data;
+  a.download=clienteActivo.contratoDoc.nombre;
+  a.click();
+}
+
+// ══ EMAIL ══
+function emailAsesor(){
+  if(!clienteActivo?.asesorEmail) return;
+  const c=clienteActivo;
+  const sub=encodeURIComponent(`Nexussafe · Cliente: ${c.nombre}`);
+  const body=encodeURIComponent(`Hola ${c.asesor},\n\nTe informo sobre el cliente ${c.nombre} (${c.cedula}).\n\nAseguradora: ${c.aseg}\nContrato: ${c.contrato}\nPlan: ${c.plan}\nVigencia: ${c.vigencia}\n\nSaludos,\nEquipo Nexussafe`);
+  window.open(`mailto:${c.asesorEmail}?subject=${sub}&body=${body}`);
+}
+function emailAsesorReferido(c,refNombre,refTel){
+  if(!c.asesorEmail) return;
+  const sub=encodeURIComponent(`Nexussafe · Nuevo referido de ${c.nombre}`);
+  const body=encodeURIComponent(`Hola ${c.asesor},\n\nTu cliente ${c.nombre} te ha referido un contacto:\n\nNombre: ${refNombre}\nTeléfono: ${refTel}\n\nPor favor comunícate a la brevedad.\n\nSaludos,\nEquipo Nexussafe`);
+  window.open(`mailto:${c.asesorEmail}?subject=${sub}&body=${body}`);
+}
+
+// ══ MODAL SEGUIMIENTO ══
+let modalSegId=null;
+function abrirModalSeg(id){
+  modalSegId=id;
+  const c=clientes.find(x=>x.id===id);
+  document.getElementById('modal-seg-title').textContent=`Seguimiento · ${c.nombre}`;
+  document.getElementById('seg-fecha').value=todayStr;
+  document.getElementById('seg-hora').value='';
+  document.getElementById('seg-notas').value='';
+  document.getElementById('seg-tipo').value='llamada';
+  document.getElementById('seg-ref-nombre').value='';
+  document.getElementById('seg-ref-tel').value='';
+  document.getElementById('referido-extra').style.display='none';
+  document.getElementById('hora-wrap').style.display='none';
+  document.getElementById('modal-seg').classList.add('open');
+}
+function abrirModalSegTipo(tipo){
+  if(!clienteActivo) return;
+  abrirModalSeg(clienteActivo.id);
+  document.getElementById('seg-tipo').value=tipo;
+  onTipoChange();
+}
+function onTipoChange(){
+  const v=document.getElementById('seg-tipo').value;
+  document.getElementById('referido-extra').style.display=(v==='referido_sol'||v==='referido_obt')?'block':'none';
+  document.getElementById('hora-wrap').style.display=v==='agenda'?'block':'none';
+}
+function guardarSeguimiento(){
+  const c=clientes.find(x=>x.id===modalSegId);
+  if(!c) return;
+  const tipo=document.getElementById('seg-tipo').value;
+  const refNombre=document.getElementById('seg-ref-nombre').value;
+  const refTel=document.getElementById('seg-ref-tel').value;
+  const s={tipo,fecha:document.getElementById('seg-fecha').value,hora:document.getElementById('seg-hora').value,notas:document.getElementById('seg-notas').value};
+  if(tipo==='referido_sol'||tipo==='referido_obt'){
+    s.refNombre=refNombre; s.refTel=refTel; c.referidoSol=true;
+    if(tipo==='referido_obt'&&refNombre&&c.asesorEmail){
+      if(confirm(`¿Notificar al asesor ${c.asesor} sobre este referido por correo?`)){
+        emailAsesorReferido(c,refNombre,refTel);
+      }
+    }
+  }
+  if(tipo==='vitality') c.vitality='activo';
+  c.seguimientos.push(s);
+  guardar();
+  cerrarModal('modal-seg');
+  actualizarContadores();
+  if(clienteActivo?.id===modalSegId) renderCliente();
+  else filtrarClientes();
+}
+
+// ══ MODAL NUEVO CLIENTE ══
+function abrirModalNuevo(){
+  ['nc-nombre','nc-cedula','nc-tel','nc-email','nc-contrato','nc-plan','nc-deducible','nc-mensualidad'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('nc-fechanac-titular').value='';
+  document.getElementById('nc-cuotas').value=0;
+  document.getElementById('nc-vigencia').value='';
+  document.getElementById('nc-fechaventa').value='';
+  document.getElementById('nc-asesor').value='';
+  document.getElementById('nc-asesor-email').value='';
+  document.getElementById('nc-empresa').value='Saludsa';
+  document.getElementById('nc-estatus').value='activo';
+  document.getElementById('nc-sat').value='';
+  toggleVitality();
+  aplicarUppercase();
+  document.getElementById('modal-nuevo').classList.add('open');
+}
+// ══ ASESOR AUTO EMAIL ══
+let ASESORES={
+  'ESTEFANIA BUSTILLOS':{email:'ebustillos@nexussafesas.com',activo:true},
+  'ALEXANDRA CHELA':{email:'achela@nexussafesas.com',activo:true},
+  'JOHANNA PACHECO':{email:'jpacheco@nexussafesas.com',activo:true},
+  'PAUL CHILUISA':{email:'gerencia@nexussafesas.com',activo:true},
+  'NATALIA IZA':{email:'niza@nexussafesas.com',activo:true},
+  'KERLY LOOR':{email:'kloor@nexussafesas.com',activo:true},
+};
+function buildAsesorOptions(){
+  const activos=Object.entries(ASESORES).filter(([,v])=>v.activo);
+  const cesantes=Object.entries(ASESORES).filter(([,v])=>!v.activo);
+  let opts='<option value="">-- Seleccionar asesor --</option>';
+  if(activos.length){
+    opts+='<optgroup label="✅ Activos">';
+    activos.forEach(([k])=>{ opts+=`<option value="${k}">${k.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ')}</option>`; });
+    opts+='</optgroup>';
+  }
+  if(cesantes.length){
+    opts+='<optgroup label="⛔ Cesantes">';
+    cesantes.forEach(([k])=>{ opts+=`<option value="${k}">${k.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ')} (cesante)</option>`; });
+    opts+='</optgroup>';
+  }
+  return opts;
+}
+function autoEmailAsesor(){
+  const val=document.getElementById('nc-asesor').value;
+  document.getElementById('nc-asesor-email').value=ASESORES[val]?ASESORES[val].email:'';
+}
+
+// ══ UPPERCASE EN INPUTS (excepto email) ══
+function aplicarUppercase(){
+  const campos=['nc-nombre','nc-cedula','nc-tel','nc-contrato','nc-plan','nc-deducible','nc-asesor'];
+  campos.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && el.tagName==='INPUT'){
+      el.addEventListener('input',function(){
+        const pos=this.selectionStart;
+        this.value=this.value.toUpperCase();
+        this.setSelectionRange(pos,pos);
+      });
+    }
+  });
+}
+
+// ══ CALCULAR VIGENCIA AUTOMÁTICA ══
+// ══ MODAL EDITAR ══
+let editarId=null;
+function abrirModalEditar(id){
+  editarId=id;
+  const c=clientes.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('ed-nombre').value=c.nombre||'';
+  document.getElementById('ed-cedula').value=c.cedula||'';
+  document.getElementById('ed-tel').value=c.tel||'';
+  document.getElementById('ed-fechanac-titular').value=c.fechaNacTitular||'';
+  document.getElementById('ed-email').value=c.email||'';
+  document.getElementById('ed-aseg').value=c.aseg||'Saludsa';
+  document.getElementById('ed-seg').value=c.seg||'Individual';
+  document.getElementById('ed-contrato').value=c.contrato||'';
+  document.getElementById('ed-plan').value=c.plan||'';
+  document.getElementById('ed-deducible').value=c.deducible||'';
+  document.getElementById('ed-mensualidad').value=c.mensualidad||'';
+  document.getElementById('ed-cuotas').value=c.cuotasPendientes||0;
+  document.getElementById('ed-fechaventa').value=c.fechaVenta||'';
+  document.getElementById('ed-vigencia').value=c.vigencia||'';
+  document.getElementById('ed-asesor').value=c.asesor||'';
+  document.getElementById('ed-asesor-email').value=c.asesorEmail||'';
+  document.getElementById('ed-empresa').value=c.empresa||'Saludsa';
+  document.getElementById('ed-estatus').value=c.estatus||'activo';
+  document.getElementById('ed-vitality').value=c.vitality||'na';
+  document.getElementById('ed-sat').value=c.satisfaccion||'';
+  document.getElementById('modal-editar').classList.add('open');
+}
+
+function calcularVigenciaEditar(){
+  const fv=document.getElementById('ed-fechaventa').value;
+  if(!fv) return;
+  const d=new Date(fv);
+  d.setFullYear(d.getFullYear()+1);
+  document.getElementById('ed-vigencia').value=d.toISOString().slice(0,10);
+}
+
+function autoEmailAsesorEditar(){
+  const val=document.getElementById('ed-asesor').value;
+  document.getElementById('ed-asesor-email').value=ASESORES[val]?ASESORES[val].email:'';
+}
+
+function guardarEdicion(){
+  const c=clientes.find(x=>x.id===editarId);
+  if(!c) return;
+  c.nombre=document.getElementById('ed-nombre').value.trim().toUpperCase();
+  c.cedula=document.getElementById('ed-cedula').value.trim();
+  c.tel=document.getElementById('ed-tel').value.trim();
+  c.fechaNacTitular=document.getElementById('ed-fechanac-titular').value;
+  c.email=document.getElementById('ed-email').value.trim();
+  c.aseg=document.getElementById('ed-aseg').value;
+  c.seg=document.getElementById('ed-seg').value;
+  c.contrato=document.getElementById('ed-contrato').value.trim().toUpperCase();
+  c.plan=document.getElementById('ed-plan').value.trim().toUpperCase();
+  c.deducible=document.getElementById('ed-deducible').value.trim().toUpperCase();
+  c.mensualidad=document.getElementById('ed-mensualidad').value.trim();
+  c.cuotasPendientes=parseInt(document.getElementById('ed-cuotas').value)||0;
+  c.fechaVenta=document.getElementById('ed-fechaventa').value;
+  c.vigencia=document.getElementById('ed-vigencia').value;
+  c.asesor=document.getElementById('ed-asesor').value;
+  c.asesorEmail=document.getElementById('ed-asesor-email').value;
+  c.empresa=document.getElementById('ed-empresa').value;
+  c.estatus=document.getElementById('ed-estatus').value;
+  c.vitality=document.getElementById('ed-vitality').value;
+  c.satisfaccion=document.getElementById('ed-sat').value;
+  guardar();
+  cerrarModal('modal-editar');
+  actualizarContadores();
+  renderCliente();
+}
+
+function calcularVigencia(){
+  const fv=document.getElementById('nc-fechaventa').value;
+  if(!fv) return;
+  const d=new Date(fv);
+  d.setFullYear(d.getFullYear()+1);
+  const vigencia=d.toISOString().slice(0,10);
+  document.getElementById('nc-vigencia').value=vigencia;
+}
+
+function toggleVitalityEditar(){
+  const aseg=document.getElementById('ed-aseg').value;
+  const seg=document.getElementById('ed-seg').value;
+  const aplica=aseg==='Saludsa'&&seg!=='Plan Dental'&&seg!=='Fideval';
+  document.getElementById('ed-vitality').style.display=aplica?'block':'none';
+  if(!aplica) document.getElementById('ed-vitality').value='na';
+}
+
+function toggleVitality(){
+  const aseg=document.getElementById('nc-aseg').value;
+  const seg=document.getElementById('nc-seg').value;
+  const aplica=aseg==='Saludsa'&&seg!=='Plan Dental'&&seg!=='Fideval';
+  document.getElementById('nc-vitality-row').style.display=aplica?'block':'none';
+  if(!aplica) document.getElementById('nc-vitality').value='na';
+}
+function guardarNuevo(){
+  const nombre=document.getElementById('nc-nombre').value.trim();
+  if(!nombre){alert('El nombre es requerido');return;}
+  const cedula=document.getElementById('nc-cedula').value.trim();
+  const tel=document.getElementById('nc-tel').value.trim();
+
+  // Validar duplicados por cédula
+  if(cedula){
+    const dupCedula=clientes.find(c=>c.cedula&&c.cedula===cedula);
+    if(dupCedula){
+      alert(`⚠️ DUPLICADO — Ya existe un cliente con esa cédula:\n\n👤 ${dupCedula.nombre}\n📱 ${dupCedula.tel||'—'}\n\nRevisa si deseas editar el cliente existente.`);
+      return;
+    }
+  }
+
+  // Validar duplicados por teléfono
+  if(tel){
+    const dupTel=clientes.find(c=>c.tel&&c.tel===tel);
+    if(dupTel){
+      const continuar=confirm(`⚠️ POSIBLE DUPLICADO — Ya existe un cliente con ese teléfono:\n\n👤 ${dupTel.nombre}\n🪪 ${dupTel.cedula||'—'}\n\n¿Deseas continuar de todas formas?`);
+      if(!continuar) return;
+    }
+  }
+
+  const aseg=document.getElementById('nc-aseg').value;
+  const vigencia=document.getElementById('nc-vigencia').value;
+  const nuevoId=clientes.length?Math.max(...clientes.map(c=>c.id))+1:1;
+  clientes.push({
+    id:nuevoId,nombre,cedula,tel,
+    fechaNacTitular:document.getElementById('nc-fechanac-titular').value,
+    email:document.getElementById('nc-email').value,
+    aseg,seg:document.getElementById('nc-seg').value,
+    contrato:document.getElementById('nc-contrato').value,
+    plan:document.getElementById('nc-plan').value,
+    deducible:document.getElementById('nc-deducible').value,
+    mensualidad:document.getElementById('nc-mensualidad').value,
+    cuotasPendientes:parseInt(document.getElementById('nc-cuotas').value)||0,
+    vigencia,vitality:(aseg==='Saludsa'&&document.getElementById('nc-seg').value!=='Plan Dental'&&document.getElementById('nc-seg').value!=='Fideval')?document.getElementById('nc-vitality').value:'na',
+    fechaVenta:document.getElementById('nc-fechaventa').value,
+    referidoSol:false,satisfaccion:document.getElementById('nc-sat').value,
+    asesor:document.getElementById('nc-asesor').value,
+    asesorEmail:document.getElementById('nc-asesor-email').value,
+    estatus:document.getElementById('nc-estatus').value,
+    empresa:document.getElementById('nc-empresa').value,
+    contratoDoc:null,fechaIngreso:vigencia||todayStr,seguimientos:[],
+  });
+  guardar();cerrarModal('modal-nuevo');initPeriodoSelects();actualizarContadores();filtrarClientes();
+}
+
+function cerrarModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
+
+// ══ IMPORTAR EXCEL ══
+const ASESOR_EMAILS={
+  'ESTEFANIA BUSTILLOS':'ebustillos@nexussafesas.com',
+  'SHIRLEY BUSTILLOS':'ebustillos@nexussafesas.com',
+  'ALEXANDRA CHELA':'achela@nexussafesas.com',
+  'JOHANNA PACHECO':'jpacheco@nexussafesas.com',
+  'PAUL CHILUISA':'gerencia@nexussafesas.com',
+  'NATALIA IZA':'niza@nexussafesas.com',
+  'KERLY LOOR':'kloor@nexussafesas.com',
+};
+
+function limpiarAsesor(raw){
+  // Quita prefijo "agente " y convierte a mayúsculas
+  return String(raw||'').replace(/^agente\s+/i,'').trim().toUpperCase();
+}
+
+function mesTextoANum(mes){
+  const m={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  return m[(mes||'').toLowerCase()]||1;
+}
+
+function detectarFormato(cols){
+  // Formato exportado por Nexussafe (hoja "Clientes")
+  if(cols.includes('Nombre') && cols.includes('Aseguradora')) return 'nexussafe_export';
+  // Formato original Nexussafe_Reportería
+  if(cols.includes('Titular')) return 'nexussafe_reporte';
+  // Formato genérico con nombre/cedula
+  if(cols.some(c=>/nombre/i.test(c))) return 'generico';
+  return 'desconocido';
+}
+
+function calcularVigenciaDesde(fechaVenta){
+  if(!fechaVenta) return '';
+  const d=new Date(fechaVenta);
+  if(isNaN(d)) return '';
+  d.setFullYear(d.getFullYear()+1);
+  return d.toISOString().slice(0,10);
+}
+
+function importarExcel(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+
+      // Buscar hoja "Clientes" primero, si no la primera
+      const sheetName=wb.SheetNames.find(n=>/clientes/i.test(n))||wb.SheetNames[0];
+      const ws=wb.Sheets[sheetName];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      if(!rows.length){alert('El archivo está vacío o no tiene datos en la hoja "'+sheetName+'"');return;}
+
+      const cols=Object.keys(rows[0]);
+      const formato=detectarFormato(cols);
+
+      let idMax=clientes.length?Math.max(...clientes.map(c=>c.id)):0;
+      let importados=0,duplicados=0,omitidos=0;
+
+      rows.forEach(row=>{
+        let nombre,cedula,contrato,tel,email,aseg,seg,plan,deducible,mensual,
+            fechaVenta,vigencia,asesorRaw,asesorEmail,estatus,vitality,satisfaccion,fechaIngreso;
+
+        if(formato==='nexussafe_export'){
+          // ── Formato exportado por el propio Nexussafe ──
+          nombre      = String(row['Nombre']||'').trim().toUpperCase();
+          cedula      = String(row['Cédula/RUC']||row['Cedula/RUC']||row['Cédula']||'').trim();
+          tel         = String(row['Teléfono']||row['Telefono']||'').trim();
+          email       = String(row['Email']||'').trim();
+          aseg        = String(row['Aseguradora']||'Saludsa').trim();
+          seg         = String(row['Segmento']||'Individual').trim();
+          contrato    = String(row['Contrato/Póliza']||row['Contrato/Poliza']||row['Contrato']||'').trim();
+          plan        = String(row['Plan']||'').trim().toUpperCase();
+          deducible   = String(row['Deducible']||'').trim();
+          mensual     = String(row['Mensualidad ($)']||row['Mensualidad']||'').trim();
+          fechaVenta  = String(row['Fecha Venta']||row['Fecha de Venta']||'').trim();
+          vigencia    = String(row['Vigencia']||'').trim()||calcularVigenciaDesde(fechaVenta);
+          asesorRaw   = limpiarAsesor(row['Asesor']||'');
+          asesorEmail = String(row['Email Asesor']||'').trim()||ASESOR_EMAILS[asesorRaw]||'';
+          const estatusRaw=String(row['Estatus']||'').trim().toLowerCase();
+          estatus     = estatusRaw==='anulado'?'anulado':'activo';
+          const vitRaw=String(row['Vitality']||'').trim().toLowerCase();
+          vitality    = vitRaw==='activo'?'activo':vitRaw==='na'?'na':'pendiente';
+          satisfaccion= String(row['Satisfacción']||row['Satisfaccion']||'').trim();
+          fechaIngreso= String(row['Fecha Ingreso']||fechaVenta||'').trim()||todayStr;
+
+        } else if(formato==='nexussafe_reporte'){
+          // ── Formato original Nexussafe_Reportería ──
+          nombre      = String(row['Titular']||'').trim().toUpperCase();
+          cedula      = String(row['Cédula']||row['Cedula']||'').trim();
+          contrato    = String(row['Fun']||'').trim();
+          tel         = String(row['Contacto']||'').trim();
+          email       = '';
+          plan        = String(row['Plan vendido']||'').trim().toUpperCase();
+          const asegEmp=String(row['Empresa ingreso']||'Saludsa').trim();
+          aseg        = asegEmp||'Saludsa';
+          seg         = 'Individual';
+          deducible   = '';
+          mensual     = String(row['Mensualidad']||'').trim();
+          const mesRaw=String(row['Mes de venta']||'').trim();
+          const anioRaw=String(row['Año']||new Date().getFullYear()).trim();
+          const mesNum=mesTextoANum(mesRaw);
+          fechaVenta  = `${anioRaw}-${String(mesNum).padStart(2,'0')}-01`;
+          vigencia    = calcularVigenciaDesde(fechaVenta);
+          asesorRaw   = limpiarAsesor(row['Asesor']||'');
+          asesorEmail = ASESOR_EMAILS[asesorRaw]||'';
+          const estadoRaw=String(row['Estado actual']||row['Estatus']||'').trim().toLowerCase();
+          estatus     = estadoRaw==='anulado'?'anulado':'activo';
+          vitality    = aseg==='Saludsa'?'pendiente':'na';
+          satisfaccion= '';
+          fechaIngreso= fechaVenta;
+
+        } else {
+          // ── Formato genérico: busca columnas por nombre aproximado ──
+          const get=(keys)=>{
+            for(const k of keys){const found=cols.find(c=>c.toLowerCase().includes(k.toLowerCase()));if(found)return String(row[found]||'').trim();}
+            return '';
+          };
+          nombre      = get(['nombre','titular','name']).toUpperCase();
+          cedula      = get(['cédula','cedula','ruc','ci','dni','id']);
+          tel         = get(['teléfono','telefono','tel','celular','contacto','phone']);
+          email       = get(['email','correo','mail']);
+          aseg        = get(['aseguradora','aseg','seguro'])||'Saludsa';
+          seg         = get(['segmento','seg'])||'Individual';
+          contrato    = get(['contrato','póliza','poliza','fun','número']);
+          plan        = get(['plan']).toUpperCase();
+          deducible   = get(['deducible']);
+          mensual     = get(['mensualidad','mensual','prima','valor']);
+          fechaVenta  = get(['fecha venta','fecha de venta','fechaventa','venta']);
+          vigencia    = get(['vigencia'])||calcularVigenciaDesde(fechaVenta);
+          asesorRaw   = limpiarAsesor(get(['asesor','agente','vendedor']));
+          asesorEmail = ASESOR_EMAILS[asesorRaw]||get(['email asesor','correo asesor']);
+          const estatusRaw=get(['estatus','estado','status']).toLowerCase();
+          estatus     = estatusRaw==='anulado'?'anulado':'activo';
+          vitality    = aseg==='Saludsa'?'pendiente':'na';
+          satisfaccion= '';
+          fechaIngreso= get(['fecha ingreso','ingreso'])||fechaVenta||todayStr;
+        }
+
+        if(!nombre){omitidos++;return;}
+
+        // Evitar duplicado por cédula + contrato
+        const existe=clientes.find(c=>
+          (cedula&&c.cedula===cedula&&c.contrato===contrato)||
+          (cedula&&c.cedula===cedula&&!contrato)
+        );
+        if(existe){duplicados++;return;}
+
+        idMax++;
+        clientes.push({
+          id:idMax,nombre,cedula,tel,email,aseg,seg,contrato,plan,deducible,
+          vigencia,vitality,referidoSol:false,satisfaccion,
+          asesor:asesorRaw,asesorEmail,estatus,
+          mensualidad:mensual,fechaVenta,contratoDoc:null,
+          fechaIngreso:fechaIngreso||todayStr,seguimientos:[],beneficiarios:[],contratos:[],
+        });
+        importados++;
+      });
+
+      guardar();initPeriodoSelects();actualizarContadores();filtrarClientes();
+      const fmtLabel={nexussafe_export:'Exportación Nexussafe',nexussafe_reporte:'Reporte Nexussafe',generico:'Genérico',desconocido:'Desconocido'};
+      alert(`✅ Importados: ${importados} clientes (formato: ${fmtLabel[formato]}).\n${duplicados?'⚠ '+duplicados+' ya existían y fueron omitidos.\n':''}${omitidos?'ℹ '+omitidos+' filas sin nombre ignoradas.':''}`);
+    }catch(err){alert('Error al leer el Excel: '+err.message);}
+  };
+  reader.readAsBinaryString(file);
+  event.target.value='';
+}
+
+// ══ VISTA ASESORES ══
+function renderAsesores(){
+  const container=document.getElementById('asesores-content');
+  container.innerHTML=`
+    <div class="tabla-wrap">
+      <div style="display:grid;grid-template-columns:1fr 1.5fr 0.6fr 0.8fr;gap:3px;
+        padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(34,129,204,0.07);">
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Asesor</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Email</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Estado</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Clientes asignados</div>
+      </div>
+      ${Object.entries(ASESORES).map(([nombre,info])=>{
+        const total=clientes.filter(c=>c.asesor===nombre).length;
+        return `<div style="display:grid;grid-template-columns:1fr 1.5fr 0.6fr 0.8fr;gap:3px;
+          padding:10px 12px;border-bottom:1px solid rgba(0,0,0,0.04);align-items:center;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#1A1A1A;">${nombre.split(' ').map(w=>w[0]+w.slice(1).toLowerCase()).join(' ')}</div>
+          </div>
+          <div style="font-size:11px;color:var(--gray);">${info.email}</div>
+          <div>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" ${info.activo?'checked':''} onchange="toggleAsesor('${nombre}',this.checked)"
+                style="width:14px;height:14px;cursor:pointer;">
+              <span class="badge ${info.activo?'badge-activo':'badge-anulado'}" style="font-size:9px;">
+                ${info.activo?'Activo':'Cesante'}
+              </span>
+            </label>
+          </div>
+          <div style="font-size:13px;font-weight:700;color:var(--gold-light);text-align:center;">${total}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function toggleAsesor(nombre,activo){
+  ASESORES[nombre].activo=activo;
+  // Repoblar selects
+  const opts=buildAsesorOptions();
+  document.getElementById('nc-asesor').innerHTML=opts;
+  document.getElementById('ed-asesor').innerHTML=opts;
+  renderAsesores();
+}
+
+// ══ VISTA RECUPERACIONES ══
+function renderAnulados(){
+  // Clientes con estatus anulado O con al menos un contrato anulado
+  const lista=clientes.filter(c=>
+    c.estatus==='anulado'||(c.contratos&&c.contratos.some(ct=>ct.estatus==='anulado'))
+  );
+  const container=document.getElementById('anulados-content');
+  if(!lista.length){
+    container.innerHTML=`<div style="padding:40px;text-align:center;color:var(--gray);font-style:italic;">
+      🎉 Sin contratos anulados. ¡Todo está activo!
+    </div>`;
+    return;
+  }
+
+  // KPIs recuperaciones
+  const totalAnulados=lista.length;
+  const gestionados=lista.filter(c=>c.seguimientos.some(s=>s.fecha===todayStr)).length;
+  const sinGestion=lista.filter(c=>c.seguimientos.filter(s=>s.tipo!=='agenda').length===0).length;
+
+  container.innerHTML=`
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
+      <div class="detalle-card dc-red" style="text-align:center;">
+        <div class="dc-label">Total anulados</div>
+        <div class="dc-val" style="font-size:28px;color:#C0392B;">${totalAnulados}</div>
+        <div class="dc-sub">Clientes a recuperar</div>
+      </div>
+      <div class="detalle-card dc-amber" style="text-align:center;">
+        <div class="dc-label">Sin gestión de recuperación</div>
+        <div class="dc-val" style="font-size:28px;color:#C27A00;">${sinGestion}</div>
+        <div class="dc-sub">No se ha contactado</div>
+      </div>
+      <div class="detalle-card dc-green" style="text-align:center;">
+        <div class="dc-label">Gestionados hoy</div>
+        <div class="dc-val" style="font-size:28px;color:#0D6B4E;">${gestionados}</div>
+        <div class="dc-sub">Contactados hoy</div>
+      </div>
+    </div>
+
+    <!-- TABLA ANULADOS -->
+    <div class="tabla-wrap">
+      <div style="display:grid;grid-template-columns:1.8fr 0.9fr 0.9fr 0.8fr 0.8fr 0.7fr 0.5fr;
+        gap:3px;padding:8px 12px;border-bottom:1px solid var(--border);background:rgba(192,57,43,0.06);">
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Cliente</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Aseguradora</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Contrato / Plan</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Asesor</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Último contacto</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);">Motivo / Notas</div>
+        <div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);"></div>
+      </div>
+      ${lista.map(c=>{
+        const gs=c.seguimientos.filter(s=>s.tipo!=='agenda');
+        const ultF=gs.length>0?gs[gs.length-1].fecha:'Nunca';
+        const diasSin=gs.length>0?diasDesde(gs[gs.length-1].fecha):'—';
+        const ultNota=gs.length>0?gs[gs.length-1].notas:'Sin gestiones';
+        const contratosAnulados=(c.contratos||[]).filter(ct=>ct.estatus==='anulado');
+        const asegMostrar=contratosAnulados.length?contratosAnulados.map(ct=>ct.aseg).join(', '):c.aseg;
+        const contratoMostrar=contratosAnulados.length?contratosAnulados.map(ct=>ct.contrato).join(', '):c.contrato||'—';
+        const planMostrar=contratosAnulados.length?contratosAnulados.map(ct=>ct.plan).join(', '):c.plan||'—';
+        return `<div style="display:grid;grid-template-columns:1.8fr 0.9fr 0.9fr 0.8fr 0.8fr 0.7fr 0.5fr;
+          gap:3px;padding:8px 12px;border-bottom:1px solid rgba(0,0,0,0.04);align-items:center;cursor:pointer;transition:background .15s;"
+          onclick="verCliente(${c.id})" onmouseover="this.style.background='rgba(192,57,43,0.04)'" onmouseout="this.style.background=''">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#1A1A1A;">${c.nombre}</div>
+            <div style="font-size:10px;color:var(--gray);">${c.cedula||'—'} · ${c.tel||'—'}</div>
+          </div>
+          <div><span class="badge badge-aseg">${asegMostrar}</span></div>
+          <div style="font-size:11px;color:#1E2A3A;">${contratoMostrar}<br><span style="font-size:9px;color:var(--gray);">${planMostrar}</span></div>
+          <div style="font-size:11px;color:#1E2A3A;">${c.asesor||'—'}</div>
+          <div style="font-size:11px;color:${typeof diasSin==='number'&&diasSin>60?'#C27A00':'var(--gray)'};">
+            ${ultF}<br><span style="font-size:9px;">${typeof diasSin==='number'?diasSin+'d atrás':diasSin}</span>
+          </div>
+          <div style="font-size:10px;color:var(--gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${ultNota}">${ultNota}</div>
+          <div style="text-align:center;">
+            <div class="icon-btn" onclick="event.stopPropagation();abrirModalSeg(${c.id})" title="Registrar gestión de recuperación">📞</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ══ VISTA AGENDAS ══
+function renderAgendas(){
+  const todas=[];
+  clientes.forEach(c=>{
+    c.seguimientos.filter(s=>s.tipo==='agenda').forEach(s=>{
+      todas.push({...s,clienteId:c.id,clienteNombre:c.nombre,clienteAseg:c.aseg});
+    });
+  });
+  todas.sort((a,b)=>a.fecha.localeCompare(b.fecha)||a.hora.localeCompare(b.hora));
+  const grupos={};
+  todas.forEach(a=>{if(!grupos[a.fecha])grupos[a.fecha]=[];grupos[a.fecha].push(a);});
+  const container=document.getElementById('agendas-content');
+  if(!todas.length){container.innerHTML='<div style="padding:24px;text-align:center;color:var(--gray);font-style:italic;">Sin agendas registradas. Agrégalas desde la ficha de cada cliente.</div>';return;}
+  container.innerHTML=Object.keys(grupos).map(fecha=>{
+    const esHoy=fecha===todayStr;
+    const esPas=fecha<todayStr;
+    return `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:12px;font-weight:700;color:${esHoy?'#C0392B':esPas?'var(--gray)':'var(--gold-light)'};">${esHoy?'📅 HOY — '+fecha:'📅 '+fecha}</span>
+        ${esHoy?'<span class="badge badge-riesgo">HOY</span>':esPas?'<span class="badge" style="background:rgba(90,104,120,0.08);color:var(--gray);border:none;">Pasada</span>':'<span class="badge badge-ok">Próxima</span>'}
+      </div>
+      ${grupos[fecha].map(a=>`
+        <div class="agenda-item ${esHoy?'agenda-hoy':esPas?'agenda-pasada':''}" onclick="verCliente(${a.clienteId})">
+          <span class="agenda-fecha-badge">${a.hora||'—'}</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#1A1A1A;">${a.clienteNombre}</div>
+            <div style="font-size:10px;color:var(--gray);">${a.clienteAseg} · ${a.notas||'Cita agendada'}</div>
+          </div>
+          <span class="badge badge-aseg">${a.clienteAseg}</span>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ══ VIEWS ══
+function showView(v,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  filtroActual=''; document.getElementById('filtro-estado').value='';
+  ['vista-lista','vista-cliente','vista-agendas','vista-anulados','vista-asesores'].forEach(id=>document.getElementById(id).style.display='none');
+  clienteActivo=null;
+  if(v==='hoy'){
+    document.getElementById('vista-lista').style.display='block';
+    const lista=clientes.filter(c=>{
+      if(c.estatus==='anulado') return false;
+      const dias=diasHasta(c.vigencia);
+      const gs=c.seguimientos.filter(s=>s.tipo!=='agenda');
+      const sinC=gs.length===0?999:diasDesde(gs[gs.length-1].fecha);
+      const agHoy=c.seguimientos.some(s=>s.tipo==='agenda'&&s.fecha===todayStr);
+      return dias<=30||sinC>=60||(c.aseg==='Saludsa'&&c.vitality==='pendiente')||!c.referidoSol||agHoy;
+    });
+    document.getElementById('lista-titulo').textContent='Prioridades de hoy';
+    renderTabla(lista);
+  } else if(v==='referidos'){
+    document.getElementById('vista-lista').style.display='block';
+    document.getElementById('lista-titulo').textContent='Gestión de referidos';
+    renderTabla(clientes.filter(c=>!c.referidoSol&&c.estatus!=='anulado'));
+  } else if(v==='asesores'){
+    document.getElementById('vista-asesores').style.display='block';
+    renderAsesores();
+  } else if(v==='anulados'){
+    document.getElementById('vista-anulados').style.display='block';
+    renderAnulados();
+  } else if(v==='agendas'){
+    document.getElementById('vista-agendas').style.display='block';
+    renderAgendas();
+  } else {
+    document.getElementById('vista-lista').style.display='block';
+    document.getElementById('lista-titulo').textContent='Todos los clientes';
+    filtrarClientes();
+  }
+}
+
+function aplicarFiltro(tipo){
+  filtroActual=tipo;
+  document.getElementById('filtro-estado').value=tipo;
+  showView('lista',document.getElementById('tb-todos'));
+  const t={renovacion:'Renovaciones próximas',sincontacto:'Sin contacto +60d',vitality:'Vitality pendiente',referido:'Solicitar referido',anulado:'Contratos anulados'};
+  document.getElementById('lista-titulo').textContent=t[tipo]||'Todos los clientes';
+  filtrarClientes();
+}
+
+// ══ EXPORTAR EXCEL ══
+function exportarExcel(){
+  if(!clientes.length){alert('No hay clientes para exportar.');return;}
+
+  const tipoL={llamada:'Llamada',whatsapp:'WhatsApp',visita:'Visita',renov:'Renovación gestionada',
+    vitality:'Vitality activado',referido_sol:'Referido solicitado',referido_obt:'Referido obtenido',
+    agenda:'Cita agendada',nota:'Nota interna'};
+
+  const wb=XLSX.utils.book_new();
+
+  // ── Hoja 1: Clientes ──
+  const hClientes=[['ID','Nombre','Cédula/RUC','Teléfono','Email','Fecha Nac.','Aseguradora',
+    'Segmento','Contrato/Póliza','Plan','Deducible','Mensualidad ($)','Cuotas Pendientes',
+    'Fecha Venta','Vigencia','Empresa','Asesor','Email Asesor','Estatus','Vitality',
+    'Referido Sol.','Satisfacción','Fecha Ingreso']];
+  clientes.forEach(c=>{
+    hClientes.push([
+      c.id, c.nombre||'', c.cedula||'', c.tel||'', c.email||'', c.fechaNac||'',
+      c.aseg||'', c.seg||'', c.contrato||'', c.plan||'', c.deducible||'',
+      c.mensualidad||'', c.cuotasPendientes||0, c.fechaVenta||'', c.vigencia||'',
+      c.empresa||'', c.asesor||'', c.asesorEmail||'',
+      c.estatus||'', c.vitality||'', c.referidoSol?'Sí':'No',
+      c.satisfaccion||'', c.fechaIngreso||''
+    ]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hClientes), 'Clientes');
+
+  // ── Hoja 2: Seguimientos / Gestiones ──
+  const hSeg=[['ID Cliente','Nombre Cliente','Tipo','Descripción Tipo','Fecha','Hora','Notas','Ref. Nombre','Ref. Teléfono']];
+  clientes.forEach(c=>{
+    (c.seguimientos||[]).forEach(s=>{
+      hSeg.push([
+        c.id, c.nombre||'', s.tipo||'', tipoL[s.tipo]||s.tipo,
+        s.fecha||'', s.hora||'', s.notas||'',
+        s.refNombre||'', s.refTel||''
+      ]);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hSeg), 'Seguimientos');
+
+  // ── Hoja 3: Beneficiarios ──
+  const hBen=[['ID Cliente','Nombre Cliente','Nombre Beneficiario','Cédula','Parentesco','Fecha Nac.','Teléfono']];
+  clientes.forEach(c=>{
+    (c.beneficiarios||[]).forEach(b=>{
+      hBen.push([c.id, c.nombre||'', b.nombre||'', b.cedula||'', b.parentesco||'', b.fechaNac||'', b.tel||'']);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hBen), 'Beneficiarios');
+
+  // ── Hoja 4: Contratos adicionales ──
+  const hCt=[['ID Cliente','Nombre Cliente','Aseguradora','Segmento','Contrato/Póliza','Plan',
+    'Deducible','Mensualidad ($)','Cuotas Pendientes','Fecha Venta','Vigencia','Empresa','Estatus','Vitality']];
+  clientes.forEach(c=>{
+    (c.contratos||[]).forEach(ct=>{
+      hCt.push([c.id, c.nombre||'', ct.aseg||'', ct.seg||'', ct.contrato||'', ct.plan||'',
+        ct.deducible||'', ct.mensualidad||'', ct.cuotasPendientes||0,
+        ct.fechaVenta||'', ct.vigencia||'', ct.empresa||'', ct.estatus||'', ct.vitality||'']);
+    });
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hCt), 'Contratos Adicionales');
+
+  const fecha=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Nexussafe_Clientes_${fecha}.xlsx`);
+}
+
+// ══ INIT ══
+function init(){
+  // Poblar selects de asesores dinámicamente
+  const opts=buildAsesorOptions();
+  document.getElementById('nc-asesor').innerHTML=opts;
+  document.getElementById('ed-asesor').innerHTML=opts;
+  initPeriodoSelects();
+  actualizarContadores();
+  filtrarClientes();
+}
+
+if(sessionStorage.getItem('nxs_auth')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  init();
+}
+</script>
+</body>
+</html>
