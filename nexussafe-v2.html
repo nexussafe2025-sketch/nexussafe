@@ -6,6 +6,57 @@
 <title>Nexussafe · Seguimiento de Clientes</title>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAnpAoGhdBDgf-fKPAVcliwMqkCDIsz2Jc",
+  authDomain: "nexussafe-b50c1.firebaseapp.com",
+  projectId: "nexussafe-b50c1",
+  storageBucket: "nexussafe-b50c1.firebasestorage.app",
+  messagingSenderId: "526590304729",
+  appId: "1:526590304729:web:e03dbf7823ff12609c39c8"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const DOC_REF = doc(db, "nexussafe", "clientes");
+
+// Exponer funciones Firebase al scope global
+window._fbGuardar = async (data) => {
+  try {
+    await setDoc(DOC_REF, { lista: data });
+  } catch(e) {
+    console.error("Error guardando en Firebase:", e);
+  }
+};
+
+window._fbCargar = async () => {
+  try {
+    const snap = await getDoc(DOC_REF);
+    if (snap.exists()) {
+      return snap.data().lista || [];
+    }
+    return [];
+  } catch(e) {
+    console.error("Error cargando de Firebase:", e);
+    return [];
+  }
+};
+
+// Escuchar cambios en tiempo real
+window._fbEscuchar = (callback) => {
+  return onSnapshot(DOC_REF, (snap) => {
+    if (snap.exists()) {
+      callback(snap.data().lista || []);
+    }
+  });
+};
+
+window._firebaseReady = true;
+window.dispatchEvent(new Event('firebaseReady'));
+</script>
 <style>
 :root{
   --gold:#1A6FB0;--gold-light:#2281CC;
@@ -371,7 +422,6 @@ body{font-family:'Lato',sans-serif;background:var(--bg);color:#1E2A3A;min-height
         <label class="imp-btn">⬆ Importar Excel
           <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExcel(event)">
         </label>
-        <button class="imp-btn" onclick="exportarExcel()" style="background:rgba(13,107,78,0.08);border-color:rgba(13,107,78,0.25);color:#0D6B4E;">⬇ Exportar Excel</button>
         <button class="add-btn" onclick="abrirModalNuevo()">+ Nuevo cliente</button>
       </div>
     </div>
@@ -688,8 +738,8 @@ function intentarLogin(){
 }
 function limpiarDatos(){
   if(confirm('¿Estás segura de que deseas eliminar TODOS los clientes? Esta acción no se puede deshacer.')){
-    localStorage.removeItem('nxs_clientes');
     clientes=[];
+    guardar();
     actualizarContadores();
     filtrarClientes();
     alert('✅ Datos eliminados. El sistema está listo para información real.');
@@ -712,9 +762,28 @@ function diasDesde(f){if(!f)return 999;return Math.round((hoy-new Date(f))/864e5
 
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-let clientes=JSON.parse(localStorage.getItem('nxs_clientes')||'null')||[];
+let clientes=[];
 let clienteActivo=null, filtroActual='';
-function guardar(){localStorage.setItem('nxs_clientes',JSON.stringify(clientes));}
+let _guardandoTimeout=null;
+
+function guardar(){
+  // Debounce: espera 300ms antes de guardar para evitar múltiples escrituras seguidas
+  clearTimeout(_guardandoTimeout);
+  _guardandoTimeout=setTimeout(async()=>{
+    if(window._fbGuardar){
+      await window._fbGuardar(clientes);
+    }
+  },300);
+}
+
+async function cargarDatos(){
+  if(window._fbCargar){
+    const data=await window._fbCargar();
+    clientes=data;
+    return true;
+  }
+  return false;
+}
 
 // ══ ESTADO ══
 function getEstado(c){
@@ -1583,24 +1652,6 @@ function mesTextoANum(mes){
   return m[(mes||'').toLowerCase()]||1;
 }
 
-function detectarFormato(cols){
-  // Formato exportado por Nexussafe (hoja "Clientes")
-  if(cols.includes('Nombre') && cols.includes('Aseguradora')) return 'nexussafe_export';
-  // Formato original Nexussafe_Reportería
-  if(cols.includes('Titular')) return 'nexussafe_reporte';
-  // Formato genérico con nombre/cedula
-  if(cols.some(c=>/nombre/i.test(c))) return 'generico';
-  return 'desconocido';
-}
-
-function calcularVigenciaDesde(fechaVenta){
-  if(!fechaVenta) return '';
-  const d=new Date(fechaVenta);
-  if(isNaN(d)) return '';
-  d.setFullYear(d.getFullYear()+1);
-  return d.toISOString().slice(0,10);
-}
-
 function importarExcel(event){
   const file=event.target.files[0];
   if(!file) return;
@@ -1608,122 +1659,83 @@ function importarExcel(event){
   reader.onload=e=>{
     try{
       const wb=XLSX.read(e.target.result,{type:'binary'});
-
-      // Buscar hoja "Clientes" primero, si no la primera
-      const sheetName=wb.SheetNames.find(n=>/clientes/i.test(n))||wb.SheetNames[0];
-      const ws=wb.Sheets[sheetName];
+      const ws=wb.Sheets[wb.SheetNames[0]];
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      if(!rows.length){alert('El archivo está vacío o no tiene datos en la hoja "'+sheetName+'"');return;}
-
-      const cols=Object.keys(rows[0]);
-      const formato=detectarFormato(cols);
+      if(!rows.length){alert('El archivo está vacío');return;}
 
       let idMax=clientes.length?Math.max(...clientes.map(c=>c.id)):0;
-      let importados=0,duplicados=0,omitidos=0;
+      let importados=0,duplicados=0;
 
       rows.forEach(row=>{
-        let nombre,cedula,contrato,tel,email,aseg,seg,plan,deducible,mensual,
-            fechaVenta,vigencia,asesorRaw,asesorEmail,estatus,vitality,satisfaccion,fechaIngreso;
+        // Columnas exactas del archivo Nexussafe_Reportería.xlsx
+        const nombre   = String(row['Titular']||'').trim().toUpperCase();
+        if(!nombre) return;
 
-        if(formato==='nexussafe_export'){
-          // ── Formato exportado por el propio Nexussafe ──
-          nombre      = String(row['Nombre']||'').trim().toUpperCase();
-          cedula      = String(row['Cédula/RUC']||row['Cedula/RUC']||row['Cédula']||'').trim();
-          tel         = String(row['Teléfono']||row['Telefono']||'').trim();
-          email       = String(row['Email']||'').trim();
-          aseg        = String(row['Aseguradora']||'Saludsa').trim();
-          seg         = String(row['Segmento']||'Individual').trim();
-          contrato    = String(row['Contrato/Póliza']||row['Contrato/Poliza']||row['Contrato']||'').trim();
-          plan        = String(row['Plan']||'').trim().toUpperCase();
-          deducible   = String(row['Deducible']||'').trim();
-          mensual     = String(row['Mensualidad ($)']||row['Mensualidad']||'').trim();
-          fechaVenta  = String(row['Fecha Venta']||row['Fecha de Venta']||'').trim();
-          vigencia    = String(row['Vigencia']||'').trim()||calcularVigenciaDesde(fechaVenta);
-          asesorRaw   = limpiarAsesor(row['Asesor']||'');
-          asesorEmail = String(row['Email Asesor']||'').trim()||ASESOR_EMAILS[asesorRaw]||'';
-          const estatusRaw=String(row['Estatus']||'').trim().toLowerCase();
-          estatus     = estatusRaw==='anulado'?'anulado':'activo';
-          const vitRaw=String(row['Vitality']||'').trim().toLowerCase();
-          vitality    = vitRaw==='activo'?'activo':vitRaw==='na'?'na':'pendiente';
-          satisfaccion= String(row['Satisfacción']||row['Satisfaccion']||'').trim();
-          fechaIngreso= String(row['Fecha Ingreso']||fechaVenta||'').trim()||todayStr;
+        const cedula   = String(row['Cédula']||row['Cedula']||'').trim();
+        const contrato = String(row['Fun']||'').trim();
+        const tel      = String(row['Contacto']||'').trim();
+        const plan     = String(row['Plan vendido']||'').trim().toUpperCase();
+        const asegEmp  = String(row['Empresa ingreso']||'Saludsa').trim();
+        const aseg     = asegEmp==='Saludsa'||asegEmp===''?'Saludsa':asegEmp;
+        const estadoRaw= String(row['Estado actual']||row['Estatus']||'').trim().toLowerCase();
+        const estatus  = estadoRaw==='anulado'?'anulado':'activo';
+        const mesRaw   = String(row['Mes de venta']||'').trim();
+        const anioRaw  = String(row['Año']||new Date().getFullYear()).trim();
+        const asesorRaw= limpiarAsesor(row['Asesor']||'');
+        const mensual  = row['Mensualidad']||'';
+        const ciudad   = String(row['Ciudad']||'').trim().toUpperCase();
 
-        } else if(formato==='nexussafe_reporte'){
-          // ── Formato original Nexussafe_Reportería ──
-          nombre      = String(row['Titular']||'').trim().toUpperCase();
-          cedula      = String(row['Cédula']||row['Cedula']||'').trim();
-          contrato    = String(row['Fun']||'').trim();
-          tel         = String(row['Contacto']||'').trim();
-          email       = '';
-          plan        = String(row['Plan vendido']||'').trim().toUpperCase();
-          const asegEmp=String(row['Empresa ingreso']||'Saludsa').trim();
-          aseg        = asegEmp||'Saludsa';
-          seg         = 'Individual';
-          deducible   = '';
-          mensual     = String(row['Mensualidad']||'').trim();
-          const mesRaw=String(row['Mes de venta']||'').trim();
-          const anioRaw=String(row['Año']||new Date().getFullYear()).trim();
-          const mesNum=mesTextoANum(mesRaw);
-          fechaVenta  = `${anioRaw}-${String(mesNum).padStart(2,'0')}-01`;
-          vigencia    = calcularVigenciaDesde(fechaVenta);
-          asesorRaw   = limpiarAsesor(row['Asesor']||'');
-          asesorEmail = ASESOR_EMAILS[asesorRaw]||'';
-          const estadoRaw=String(row['Estado actual']||row['Estatus']||'').trim().toLowerCase();
-          estatus     = estadoRaw==='anulado'?'anulado':'activo';
-          vitality    = aseg==='Saludsa'?'pendiente':'na';
-          satisfaccion= '';
-          fechaIngreso= fechaVenta;
+        // Construir fecha de venta desde mes/año de venta
+        const mesNum   = mesTextoANum(mesRaw);
+        const fechaVenta = `${anioRaw}-${String(mesNum).padStart(2,'0')}-01`;
+        // Vigencia = fecha de venta + 1 año (automático)
+        const dVig = new Date(fechaVenta);
+        dVig.setFullYear(dVig.getFullYear()+1);
+        const vigencia = dVig.toISOString().slice(0,10);
+        // Fecha de ingreso = fecha de venta
+        const fechaIng = fechaVenta;
 
-        } else {
-          // ── Formato genérico: busca columnas por nombre aproximado ──
-          const get=(keys)=>{
-            for(const k of keys){const found=cols.find(c=>c.toLowerCase().includes(k.toLowerCase()));if(found)return String(row[found]||'').trim();}
-            return '';
-          };
-          nombre      = get(['nombre','titular','name']).toUpperCase();
-          cedula      = get(['cédula','cedula','ruc','ci','dni','id']);
-          tel         = get(['teléfono','telefono','tel','celular','contacto','phone']);
-          email       = get(['email','correo','mail']);
-          aseg        = get(['aseguradora','aseg','seguro'])||'Saludsa';
-          seg         = get(['segmento','seg'])||'Individual';
-          contrato    = get(['contrato','póliza','poliza','fun','número']);
-          plan        = get(['plan']).toUpperCase();
-          deducible   = get(['deducible']);
-          mensual     = get(['mensualidad','mensual','prima','valor']);
-          fechaVenta  = get(['fecha venta','fecha de venta','fechaventa','venta']);
-          vigencia    = get(['vigencia'])||calcularVigenciaDesde(fechaVenta);
-          asesorRaw   = limpiarAsesor(get(['asesor','agente','vendedor']));
-          asesorEmail = ASESOR_EMAILS[asesorRaw]||get(['email asesor','correo asesor']);
-          const estatusRaw=get(['estatus','estado','status']).toLowerCase();
-          estatus     = estatusRaw==='anulado'?'anulado':'activo';
-          vitality    = aseg==='Saludsa'?'pendiente':'na';
-          satisfaccion= '';
-          fechaIngreso= get(['fecha ingreso','ingreso'])||fechaVenta||todayStr;
-        }
-
-        if(!nombre){omitidos++;return;}
+        // Email del asesor automático
+        const asesorEmail = ASESOR_EMAILS[asesorRaw]||'';
 
         // Evitar duplicado por cédula + contrato
-        const existe=clientes.find(c=>
-          (cedula&&c.cedula===cedula&&c.contrato===contrato)||
-          (cedula&&c.cedula===cedula&&!contrato)
+        const existe = clientes.find(c=>
+          (cedula && c.cedula===cedula && c.contrato===contrato) ||
+          (cedula && c.cedula===cedula && !contrato)
         );
         if(existe){duplicados++;return;}
 
         idMax++;
         clientes.push({
-          id:idMax,nombre,cedula,tel,email,aseg,seg,contrato,plan,deducible,
-          vigencia,vitality,referidoSol:false,satisfaccion,
-          asesor:asesorRaw,asesorEmail,estatus,
-          mensualidad:mensual,fechaVenta,contratoDoc:null,
-          fechaIngreso:fechaIngreso||todayStr,seguimientos:[],beneficiarios:[],contratos:[],
+          id:idMax,
+          nombre,
+          cedula,
+          tel,
+          email:'',
+          aseg,
+          seg:'Individual',
+          contrato,
+          plan,
+          deducible:'',
+          vigencia,
+          vitality:aseg==='Saludsa'?'pendiente':'na',
+          referidoSol:false,
+          satisfaccion:'',
+          asesor:asesorRaw,
+          asesorEmail,
+          estatus,
+          ciudad,
+          mensualidad:String(mensual),
+          fechaVenta,
+          contratoDoc:null,
+          fechaIngreso:fechaIng,
+          seguimientos:[],
         });
         importados++;
       });
 
       guardar();initPeriodoSelects();actualizarContadores();filtrarClientes();
-      const fmtLabel={nexussafe_export:'Exportación Nexussafe',nexussafe_reporte:'Reporte Nexussafe',generico:'Genérico',desconocido:'Desconocido'};
-      alert(`✅ Importados: ${importados} clientes (formato: ${fmtLabel[formato]}).\n${duplicados?'⚠ '+duplicados+' ya existían y fueron omitidos.\n':''}${omitidos?'ℹ '+omitidos+' filas sin nombre ignoradas.':''}`);
+      alert(`✅ Importados: ${importados} clientes.\n${duplicados?duplicados+' registros ya existían y fueron omitidos.':''}`);
     }catch(err){alert('Error al leer el Excel: '+err.message);}
   };
   reader.readAsBinaryString(file);
@@ -1938,73 +1950,34 @@ function aplicarFiltro(tipo){
   filtrarClientes();
 }
 
-// ══ EXPORTAR EXCEL ══
-function exportarExcel(){
-  if(!clientes.length){alert('No hay clientes para exportar.');return;}
-
-  const tipoL={llamada:'Llamada',whatsapp:'WhatsApp',visita:'Visita',renov:'Renovación gestionada',
-    vitality:'Vitality activado',referido_sol:'Referido solicitado',referido_obt:'Referido obtenido',
-    agenda:'Cita agendada',nota:'Nota interna'};
-
-  const wb=XLSX.utils.book_new();
-
-  // ── Hoja 1: Clientes ──
-  const hClientes=[['ID','Nombre','Cédula/RUC','Teléfono','Email','Fecha Nac.','Aseguradora',
-    'Segmento','Contrato/Póliza','Plan','Deducible','Mensualidad ($)','Cuotas Pendientes',
-    'Fecha Venta','Vigencia','Empresa','Asesor','Email Asesor','Estatus','Vitality',
-    'Referido Sol.','Satisfacción','Fecha Ingreso']];
-  clientes.forEach(c=>{
-    hClientes.push([
-      c.id, c.nombre||'', c.cedula||'', c.tel||'', c.email||'', c.fechaNac||'',
-      c.aseg||'', c.seg||'', c.contrato||'', c.plan||'', c.deducible||'',
-      c.mensualidad||'', c.cuotasPendientes||0, c.fechaVenta||'', c.vigencia||'',
-      c.empresa||'', c.asesor||'', c.asesorEmail||'',
-      c.estatus||'', c.vitality||'', c.referidoSol?'Sí':'No',
-      c.satisfaccion||'', c.fechaIngreso||''
-    ]);
-  });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hClientes), 'Clientes');
-
-  // ── Hoja 2: Seguimientos / Gestiones ──
-  const hSeg=[['ID Cliente','Nombre Cliente','Tipo','Descripción Tipo','Fecha','Hora','Notas','Ref. Nombre','Ref. Teléfono']];
-  clientes.forEach(c=>{
-    (c.seguimientos||[]).forEach(s=>{
-      hSeg.push([
-        c.id, c.nombre||'', s.tipo||'', tipoL[s.tipo]||s.tipo,
-        s.fecha||'', s.hora||'', s.notas||'',
-        s.refNombre||'', s.refTel||''
-      ]);
-    });
-  });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hSeg), 'Seguimientos');
-
-  // ── Hoja 3: Beneficiarios ──
-  const hBen=[['ID Cliente','Nombre Cliente','Nombre Beneficiario','Cédula','Parentesco','Fecha Nac.','Teléfono']];
-  clientes.forEach(c=>{
-    (c.beneficiarios||[]).forEach(b=>{
-      hBen.push([c.id, c.nombre||'', b.nombre||'', b.cedula||'', b.parentesco||'', b.fechaNac||'', b.tel||'']);
-    });
-  });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hBen), 'Beneficiarios');
-
-  // ── Hoja 4: Contratos adicionales ──
-  const hCt=[['ID Cliente','Nombre Cliente','Aseguradora','Segmento','Contrato/Póliza','Plan',
-    'Deducible','Mensualidad ($)','Cuotas Pendientes','Fecha Venta','Vigencia','Empresa','Estatus','Vitality']];
-  clientes.forEach(c=>{
-    (c.contratos||[]).forEach(ct=>{
-      hCt.push([c.id, c.nombre||'', ct.aseg||'', ct.seg||'', ct.contrato||'', ct.plan||'',
-        ct.deducible||'', ct.mensualidad||'', ct.cuotasPendientes||0,
-        ct.fechaVenta||'', ct.vigencia||'', ct.empresa||'', ct.estatus||'', ct.vitality||'']);
-    });
-  });
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hCt), 'Contratos Adicionales');
-
-  const fecha=new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `Nexussafe_Clientes_${fecha}.xlsx`);
+// ══ LOADING OVERLAY ══
+function mostrarCargando(msg){
+  let el=document.getElementById('fb-loading');
+  if(!el){
+    el=document.createElement('div');
+    el.id='fb-loading';
+    el.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:Inter,sans-serif;';
+    el.innerHTML=`<div style="width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#C9A84C;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div id="fb-loading-msg" style="font-size:13px;color:#5A6878;letter-spacing:0.5px;">${msg}</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+    document.body.appendChild(el);
+  } else {
+    document.getElementById('fb-loading-msg').textContent=msg;
+    el.style.display='flex';
+  }
+}
+function ocultarCargando(){
+  const el=document.getElementById('fb-loading');
+  if(el) el.style.display='none';
 }
 
 // ══ INIT ══
-function init(){
+async function init(){
+  mostrarCargando('Conectando con Firebase…');
+  // Esperar a que Firebase esté listo
+  if(!window._firebaseReady){
+    await new Promise(resolve=>window.addEventListener('firebaseReady',resolve,{once:true}));
+  }
+  mostrarCargando('Cargando clientes…');
+  await cargarDatos();
   // Poblar selects de asesores dinámicamente
   const opts=buildAsesorOptions();
   document.getElementById('nc-asesor').innerHTML=opts;
@@ -2012,6 +1985,17 @@ function init(){
   initPeriodoSelects();
   actualizarContadores();
   filtrarClientes();
+  ocultarCargando();
+  // Escuchar cambios en tiempo real (por si se actualiza desde otro dispositivo)
+  window._fbEscuchar&&window._fbEscuchar((lista)=>{
+    clientes=lista;
+    actualizarContadores();
+    filtrarClientes();
+    if(clienteActivo){
+      clienteActivo=clientes.find(c=>c.id===clienteActivo.id)||null;
+      if(clienteActivo) renderCliente();
+    }
+  });
 }
 
 if(sessionStorage.getItem('nxs_auth')==='1'){
