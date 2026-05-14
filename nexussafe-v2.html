@@ -939,7 +939,7 @@ function renderTabla(lista){
 
 // ══ VISTA CLIENTE ══
 function verCliente(id){
-  clienteActivo=clientes.find(c=>c.id===id);
+  clienteActivo=clientes.find(c=>String(c.id)===String(id));
   if(!clienteActivo) return;
   document.getElementById('vista-lista').style.display='none';
   document.getElementById('vista-agendas').style.display='none';
@@ -1374,8 +1374,8 @@ function emailAsesorReferido(c,refNombre,refTel){
 // ══ MODAL SEGUIMIENTO ══
 let modalSegId=null;
 function abrirModalSeg(id){
-  modalSegId=id;
-  const c=clientes.find(x=>x.id===id);
+  modalSegId=String(id);
+  const c=clientes.find(x=>String(x.id)===String(id));
   document.getElementById('modal-seg-title').textContent=`Seguimiento · ${c.nombre}`;
   document.getElementById('seg-fecha').value=todayStr;
   document.getElementById('seg-hora').value='';
